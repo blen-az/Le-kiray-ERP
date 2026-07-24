@@ -780,15 +780,58 @@ export default function MachineDetailsPage() {
         </Card>
       )}
 
-      {/* Placeholders */}
-      {(activeTab === 'maintenance' || activeTab === 'reports') && (
+      {activeTab === 'maintenance' && (
+        <div className="space-y-5 animate-fadeIn">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Equipment Maintenance History</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Chronological breakdown logs, preventive service, spare parts, and repair costs for {machine.brand} {machine.model}.</p>
+            </div>
+            <Link
+              href={`/dashboard/maintenance/new?machineId=${machine.id}`}
+              className="flex items-center gap-1.5 bg-[#0284c7] hover:bg-[#0275b0] text-white px-3.5 py-1.5 rounded-md text-xs font-semibold shadow-xs"
+            >
+              <Plus size={14} />
+              New Maintenance Log
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border border-slate-100 shadow-xs p-4 space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Maintenance Logs</span>
+              <span className="text-xl font-black text-slate-900 block">Fleet Repairs</span>
+              <Link href={`/dashboard/maintenance?machineId=${machine.id}`} className="text-[10px] text-[#0284c7] font-semibold hover:underline block mt-1">
+                View Maintenance Directory →
+              </Link>
+            </Card>
+
+            <Card className="border border-slate-100 shadow-xs p-4 space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Service Schedule</span>
+              <span className="text-xl font-black text-emerald-700 block">Reminders & Overdue</span>
+              <Link href="/dashboard/maintenance/schedule" className="text-[10px] text-[#0284c7] font-semibold hover:underline block mt-1">
+                Check Service Schedule →
+              </Link>
+            </Card>
+
+            <Card className="border border-slate-100 shadow-xs p-4 space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Cost & Downtime</span>
+              <span className="text-xl font-black text-rose-600 block">Analytics Audit</span>
+              <Link href="/dashboard/maintenance/reports" className="text-[10px] text-[#0284c7] font-semibold hover:underline block mt-1">
+                View Maintenance Reports →
+              </Link>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'reports' && (
         <Card className="border border-slate-100 shadow-xs p-6 animate-fadeIn">
           <div className="text-center py-12 space-y-3">
             <AlertTriangle className="text-[#0284c7] mx-auto" size={36} />
             <div>
               <h3 className="text-sm font-bold text-slate-900 capitalize">{activeTab} Module Integration</h3>
               <p className="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
-                This tab represents a premium data connection placeholder. Actual records will sync once the full {activeTab} modules are completed.
+                This tab represents a data connection placeholder.
               </p>
             </div>
           </div>

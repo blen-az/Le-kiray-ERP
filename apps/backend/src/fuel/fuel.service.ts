@@ -235,9 +235,9 @@ export class FuelService {
 
     // 1. Verify Diesel inventory exists and has stock
     const dieselItem = await this.prisma.inventoryItem.findFirst({
-      where: { companyId, category: 'FUEL', name: { contains: 'Diesel', mode: 'insensitive' }, deletedAt: null },
+      where: { companyId, OR: [{ category: 'Diesel' }, { category: 'FUEL' }, { isFuelItem: true }, { itemName: { contains: 'Diesel', mode: 'insensitive' } }], deletedAt: null },
     });
-    if (!dieselItem || dieselItem.quantity < dto.litersIssued) {
+    if (!dieselItem || dieselItem.currentQuantity < dto.litersIssued) {
       throw new BadRequestException('Insufficient diesel stock in inventory');
     }
 
@@ -245,7 +245,7 @@ export class FuelService {
     await this.prisma.inventoryItem.update({
       where: { id: dieselItem.id },
       data: {
-        quantity: {
+        currentQuantity: {
           decrement: dto.litersIssued,
         },
       },
@@ -256,12 +256,18 @@ export class FuelService {
       data: {
         companyId,
         inventoryItemId: dieselItem.id,
-        warehouseId: dieselItem.warehouseId,
+        fromWarehouseId: dieselItem.defaultWarehouseId || null,
         projectId: request.projectId,
         siteId: request.siteId,
-        quantity: -dto.litersIssued,
-        movementType: 'STOCK_OUT',
-        approvedById: userId,
+        machineId: request.machineId,
+        fuelRequestId: request.id,
+        quantity: dto.litersIssued,
+        movementType: 'FUEL_ISSUE',
+        unitCost: request.costPerLiter || 0,
+        totalCost: dto.litersIssued * (request.costPerLiter || 0),
+        requestedById: request.requestedById,
+        approvedById: request.approvedById,
+        issuedById: userId,
         createdById: userId,
       },
     });
@@ -383,25 +389,28 @@ export class FuelService {
 
     // Deduct stock if Diesel inventory exists
     const dieselItem = await this.prisma.inventoryItem.findFirst({
-      where: { companyId, category: 'FUEL', name: { contains: 'Diesel', mode: 'insensitive' }, deletedAt: null },
+      where: { companyId, OR: [{ category: 'Diesel' }, { category: 'FUEL' }, { isFuelItem: true }, { itemName: { contains: 'Diesel', mode: 'insensitive' } }], deletedAt: null },
     });
     if (dieselItem) {
-      if (dieselItem.quantity < dto.litersUsed) {
+      if (dieselItem.currentQuantity < dto.litersUsed) {
         throw new BadRequestException('Insufficient diesel stock in inventory');
       }
       await this.prisma.inventoryItem.update({
         where: { id: dieselItem.id },
-        data: { quantity: { decrement: dto.litersUsed } },
+        data: { currentQuantity: { decrement: dto.litersUsed } },
       });
       await this.prisma.stockMovement.create({
         data: {
           companyId,
           inventoryItemId: dieselItem.id,
-          warehouseId: dieselItem.warehouseId,
+          fromWarehouseId: dieselItem.defaultWarehouseId || null,
           projectId: dto.projectId,
           siteId: dto.siteId,
-          quantity: -dto.litersUsed,
-          movementType: 'STOCK_OUT',
+          machineId: dto.machineId,
+          quantity: dto.litersUsed,
+          movementType: 'FUEL_ISSUE',
+          unitCost: dto.costPerLiter,
+          totalCost: dto.costPerLiter ? dto.litersUsed * dto.costPerLiter : 0,
           approvedById: userId,
           createdById: userId,
         },

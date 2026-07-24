@@ -23,8 +23,21 @@ model Company {
   projects          Project[]
   machines          Machine[]
   warehouses        Warehouse[]
+  inventoryItems    InventoryItem[]
+  inventoryRequests InventoryRequest[]
   employees         Employee[]
-  auditLogs         AuditLog[]
+  employeeAssignments EmployeeAssignment[]
+  leaveRequests     LeaveRequest[]
+  dailyReports       DailyReport[]
+  dailyReportMachinery DailyReportMachinery[]
+  dailyReportMaterials DailyReportMaterial[]
+  dailyReportWorkers   DailyReportWorker[]
+  dailyReportPhotos    DailyReportPhoto[]
+  maintenanceRecords   MaintenanceRecord[]
+  maintenanceParts     MaintenancePart[]
+  auditLogs            AuditLog[]
+  expenses             Expense[]
+  projectRevenues      ProjectRevenue[]
 
   @@map("companies")
 }
@@ -45,17 +58,33 @@ model User {
   refreshToken String?
 
   // Relations
-  roles                  UserRole[]
-  managedProjects        Project[]         @relation("ProjectManager")
-  managedSites           Site[]            @relation("SiteManager")
-  fuelRequestsRequested  FuelRequest[]     @relation("FuelRequestedBy")
-  fuelRequestsApproved   FuelRequest[]     @relation("FuelApprovedBy")
-  fuelRequestsIssued     FuelRequest[]     @relation("FuelIssuedBy")
-  fuelLogsIssued         FuelLog[]         @relation("FuelLogIssuedBy")
-  approvedStockMovements StockMovement[]   @relation("StockMovementApprovedBy")
-  recordedAttendances    Attendance[]      @relation("AttendanceRecordedBy")
-  submittedReports       DailyReport[]     @relation("DailyReportSubmittedBy")
-  auditLogs              AuditLog[]
+  roles                      UserRole[]
+  managedProjects            Project[]            @relation("ProjectManager")
+  managedSites               Site[]               @relation("SiteManager")
+  managedWarehouses          Warehouse[]          @relation("WarehouseManager")
+  fuelRequestsRequested      FuelRequest[]        @relation("FuelRequestedBy")
+  fuelRequestsApproved       FuelRequest[]        @relation("FuelApprovedBy")
+  fuelRequestsIssued         FuelRequest[]        @relation("FuelIssuedBy")
+  fuelLogsIssued             FuelLog[]            @relation("FuelLogIssuedBy")
+  stockMovementsRequested    StockMovement[]      @relation("StockMovementRequestedBy")
+  approvedStockMovements     StockMovement[]      @relation("StockMovementApprovedBy")
+  stockMovementsIssued       StockMovement[]      @relation("StockMovementIssuedBy")
+  inventoryRequestsRequested InventoryRequest[]   @relation("InventoryRequestedBy")
+  inventoryRequestsApproved  InventoryRequest[]   @relation("InventoryApprovedBy")
+  inventoryRequestsIssued    InventoryRequest[]   @relation("InventoryIssuedBy")
+  recordedAttendances        Attendance[]         @relation("AttendanceRecordedBy")
+  approvedAttendances        Attendance[]         @relation("AttendanceApprovedBy")
+  assignedEmployees          EmployeeAssignment[] @relation("AssignedByEmployee")
+  requestedLeaves            LeaveRequest[]       @relation("LeaveRequestedBy")
+  approvedLeaves             LeaveRequest[]       @relation("LeaveApprovedBy")
+  submittedReports           DailyReport[]        @relation("DailyReportSubmittedBy")
+  approvedReports            DailyReport[]        @relation("DailyReportApprovedBy")
+  uploadedReportPhotos       DailyReportPhoto[]   @relation("DailyReportPhotoUploadedBy")
+  reportedMaintenance        MaintenanceRecord[]  @relation("MaintenanceReportedBy")
+  recordedExpenses           Expense[]            @relation("ExpenseRecordedBy")
+  approvedExpenses           Expense[]            @relation("ExpenseApprovedBy")
+  recordedRevenues           ProjectRevenue[]     @relation("RevenueRecordedBy")
+  auditLogs                  AuditLog[]
 
   @@map("users")
 }
@@ -157,12 +186,19 @@ model Project {
 
   // Relations
   sites              Site[]
+  warehouses         Warehouse[]
   machineAssignments MachineAssignment[]
   fuelRequests       FuelRequest[]
   fuelLogs           FuelLog[]
   stockMovements     StockMovement[]
+  inventoryRequests  InventoryRequest[]
   dailyReports       DailyReport[]
   currentMachines    Machine[]           @relation("CurrentProjectMachines")
+  employeeAssignments EmployeeAssignment[]
+  attendance         Attendance[]
+  maintenanceRecords MaintenanceRecord[]
+  expenses           Expense[]
+  projectRevenues    ProjectRevenue[]
 
   @@map("projects")
 }
@@ -188,13 +224,19 @@ model Site {
   deletedAt     DateTime?
 
   // Relations
+  warehouses         Warehouse[]
   machineAssignments MachineAssignment[]
   fuelRequests       FuelRequest[]
   fuelLogs           FuelLog[]
   employees          Employee[]
   dailyReports       DailyReport[]
   stockMovements     StockMovement[]
+  inventoryRequests  InventoryRequest[]
   currentMachines    Machine[]           @relation("CurrentSiteMachines")
+  employeeAssignments EmployeeAssignment[]
+  attendance         Attendance[]
+  maintenanceRecords MaintenanceRecord[]
+  expenses           Expense[]
 
   @@map("sites")
 }
@@ -234,6 +276,9 @@ model Machine {
   fuelRequests       FuelRequest[]
   fuelLogs           FuelLog[]
   maintenanceRecords MaintenanceRecord[]
+  stockMovements     StockMovement[]
+  dailyReportMachinery DailyReportMachinery[]
+  expenses           Expense[]
 
   @@map("machines")
 }
@@ -304,7 +349,8 @@ model FuelRequest {
   updatedById     String?
 
   // Relations
-  fuelLogs FuelLog[]
+  fuelLogs       FuelLog[]
+  stockMovements StockMovement[]
 
   @@map("fuel_requests")
 }
@@ -342,162 +388,473 @@ model FuelLog {
 }
 
 model Warehouse {
-  id          String    @id @default(uuid())
-  companyId   String
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name        String
-  location    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
-  createdById String?
-  updatedById String?
+  id            String    @id @default(uuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  warehouseName String
+  warehouseCode String?
+  type          String    @default("Main Warehouse") // "Main Warehouse", "Site Store", "Fuel Store", "Tool Store", "Spare Parts Store", "Temporary Store"
+  projectId     String?
+  project       Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  siteId        String?
+  site          Site?     @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  location      String?
+  managerId     String?
+  manager       User?     @relation("WarehouseManager", fields: [managerId], references: [id], onDelete: SetNull)
+  status        String    @default("Active") // "Active", "Inactive"
+  notes         String?   @db.Text
+  createdById   String?
+  updatedById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
   // Relations
   inventoryItems InventoryItem[]
-  stockMovements StockMovement[]
+  defaultItems   InventoryItem[] @relation("DefaultWarehouse")
+  fromMovements  StockMovement[] @relation("FromWarehouse")
+  toMovements    StockMovement[] @relation("ToWarehouse")
+  stockMovements StockMovement[] @relation("LegacyWarehouse")
 
   @@map("warehouses")
 }
 
 model InventoryItem {
-  id            String    @id @default(uuid())
-  companyId     String
-  warehouseId   String
-  warehouse     Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  name          String
-  category      String    // e.g. "CEMENT", "REBAR", "DIESEL"
-  unit          String    // e.g. "BAGS", "PCS", "LITERS"
-  quantity      Float     @default(0.0)
-  minStockAlert Float     @default(10.0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
-  createdById   String?
-  updatedById   String?
+  id                 String    @id @default(uuid())
+  companyId          String
+  company            Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  itemName           String
+  itemCode           String?
+  category           String    // e.g. "Cement", "Rebar", "Diesel", "Spare Parts", etc.
+  unit               String    // e.g. "Bag", "Kg", "Ton", "Liter", "Piece", etc.
+  description        String?   @db.Text
+  currentQuantity    Float     @default(0.0)
+  minimumStockLevel  Float     @default(0.0)
+  maximumStockLevel  Float?
+  averageUnitCost    Float     @default(0.0)
+  totalValue         Float     @default(0.0)
+  defaultWarehouseId String?
+  defaultWarehouse   Warehouse? @relation("DefaultWarehouse", fields: [defaultWarehouseId], references: [id], onDelete: SetNull)
+  isFuelItem         Boolean   @default(false)
+  isConsumable       Boolean   @default(false)
+  isTool             Boolean   @default(false)
+  isSparePart        Boolean   @default(false)
+  status             String    @default("Active") // "Active", "Inactive", "Low Stock", "Out of Stock"
+  createdById        String?
+  updatedById        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
 
   // Relations
-  stockMovements StockMovement[]
+  stockMovements    StockMovement[]
+  inventoryRequests InventoryRequest[]
+  dailyReportMaterials DailyReportMaterial[]
+  maintenanceParts  MaintenancePart[]
+  legacyWarehouse   Warehouse?        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  warehouseId       String?
 
-  @@unique([warehouseId, name])
   @@map("inventory_items")
 }
 
 model StockMovement {
-  id              String    @id @default(uuid())
+  id              String         @id @default(uuid())
   companyId       String
   inventoryItemId String
-  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
-  warehouseId     String
-  warehouse       Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  inventoryItem   InventoryItem  @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  fromWarehouseId String?
+  fromWarehouse   Warehouse?     @relation("FromWarehouse", fields: [fromWarehouseId], references: [id], onDelete: SetNull)
+  toWarehouseId   String?
+  toWarehouse     Warehouse?     @relation("ToWarehouse", fields: [toWarehouseId], references: [id], onDelete: SetNull)
+  warehouseId     String?
+  warehouse       Warehouse?     @relation("LegacyWarehouse", fields: [warehouseId], references: [id], onDelete: SetNull)
   projectId       String?
-  project         Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  project         Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
   siteId          String?
-  site            Site?     @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  quantity        Float     // Positive for stock-in, Negative for stock-out
-  movementType    String    // "STOCK_IN", "STOCK_OUT", "TRANSFER"
+  site            Site?          @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  requestedById   String?
+  requestedBy     User?          @relation("StockMovementRequestedBy", fields: [requestedById], references: [id])
   approvedById    String?
-  approvedBy      User?     @relation("StockMovementApprovedBy", fields: [approvedById], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
+  approvedBy      User?          @relation("StockMovementApprovedBy", fields: [approvedById], references: [id])
+  issuedById      String?
+  issuedBy        User?          @relation("StockMovementIssuedBy", fields: [issuedById], references: [id])
+  movementType    String         // "STOCK_IN", "STOCK_OUT", "TRANSFER", "ADJUSTMENT_IN", "ADJUSTMENT_OUT", "RETURN", "DAMAGED", "LOST", "FUEL_ISSUE"
+  quantity        Float
+  unitCost        Float          @default(0.0)
+  totalCost       Float          @default(0.0)
+  movementDate    DateTime       @default(now())
+  referenceNumber String?
+  reason          String?
+  notes           String?        @db.Text
+  fuelRequestId   String?
+  fuelRequest     FuelRequest?   @relation(fields: [fuelRequestId], references: [id], onDelete: SetNull)
+  machineId       String?
+  machine         Machine?       @relation(fields: [machineId], references: [id], onDelete: SetNull)
   createdById     String?
   updatedById     String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
 
   @@map("stock_movements")
 }
 
+model InventoryRequest {
+  id                String        @id @default(uuid())
+  companyId         String
+  company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  projectId         String
+  project           Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  siteId            String
+  site              Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  inventoryItemId   String
+  inventoryItem     InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  requestedById     String
+  requestedBy       User          @relation("InventoryRequestedBy", fields: [requestedById], references: [id])
+  approvedById      String?
+  approvedBy        User?         @relation("InventoryApprovedBy", fields: [approvedById], references: [id])
+  issuedById        String?
+  issuedBy          User?         @relation("InventoryIssuedBy", fields: [issuedById], references: [id])
+  quantityRequested Float
+  quantityApproved  Float         @default(0.0)
+  quantityIssued    Float         @default(0.0)
+  status            String        @default("Pending") // "Pending", "Approved", "Rejected", "Issued", "Partially Issued", "Cancelled"
+  priority          String        @default("Normal")  // "Low", "Normal", "High", "Urgent"
+  requestDate       DateTime      @default(now())
+  approvedAt        DateTime?
+  issuedAt          DateTime?
+  purpose           String?
+  notes             String?       @db.Text
+  rejectionReason   String?       @db.Text
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  deletedAt         DateTime?
+
+  @@map("inventory_requests")
+}
+
 model Employee {
-  id          String    @id @default(uuid())
-  companyId   String
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  firstName   String
-  lastName    String
-  email       String?
-  phone       String?
-  role        String    // Job Title e.g. "OPERATOR", "SITE_MANAGER"
-  siteId      String?
-  site        Site?     @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
-  createdById String?
-  updatedById String?
+  id                    String    @id @default(uuid())
+  companyId             String
+  company               Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeCode          String?
+  firstName             String
+  middleName            String?
+  lastName              String
+  phone                 String?
+  email                 String?
+  gender                String?   // "Male", "Female"
+  dateOfBirth           DateTime?
+  nationalIdNumber      String?
+  position              String    @default("Daily Laborer") // Job Title e.g. "Machine Operator", "Site Manager", "Daily Laborer"
+  department            String?
+  employmentType        String    @default("Permanent")     // "Permanent", "Contract", "Temporary", "Daily Laborer", "Part Time", "Intern", "Consultant"
+  employmentStatus      String    @default("Active")        // "Active", "Inactive", "On Leave", "Suspended", "Terminated", "Resigned"
+  hireDate              DateTime?
+  terminationDate       DateTime?
+  dailyRate             Float     @default(0.0)
+  monthlySalary         Float     @default(0.0)
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  address               String?
+  documentUrl           String?
+  notes                 String?   @db.Text
+  role                  String?   // Legacy job title fallback
+  siteId                String?
+  site                  Site?     @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+  createdById           String?
+  updatedById           String?
 
   // Relations
   attendance         Attendance[]
+  assignments        EmployeeAssignment[]
+  leaveRequests      LeaveRequest[]
   currentMachines    Machine[]           @relation("MachineCurrentOperator")
-  assignments        MachineAssignment[] @relation("MachineAssignmentOperator")
+  machineAssignments MachineAssignment[] @relation("MachineAssignmentOperator")
   fuelRequests       FuelRequest[]       @relation("FuelRequestOperator")
   fuelLogs           FuelLog[]           @relation("FuelLogOperator")
+  dailyReportMachinery DailyReportMachinery[]
+  dailyReportWorkers DailyReportWorker[]
+  mechanicMaintenanceRecords MaintenanceRecord[] @relation("MaintenanceMechanic")
 
   @@map("employees")
 }
 
-model Attendance {
-  id           String    @id @default(uuid())
-  companyId    String
-  employeeId   String
-  employee     Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  date         DateTime
-  status       String    // "PRESENT", "ABSENT", "LATE", "ON_LEAVE"
-  remarks      String?
-  recordedById String
-  recordedBy   User      @relation("AttendanceRecordedBy", fields: [recordedById], references: [id])
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
-  createdById  String?
-  updatedById  String?
-
-  @@unique([employeeId, date])
-  @@map("attendance")
-}
-
-model DailyReport {
+model EmployeeAssignment {
   id             String    @id @default(uuid())
   companyId      String
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId     String
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   projectId      String
   project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   siteId         String
   site           Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  date           DateTime
-  workCompleted  String    @db.Text
-  machineryUsed  String?   @db.Text
-  workersPresent Int       @default(0)
-  materialsUsed  String?   @db.Text
-  fuelUsed       Float?    @default(0.0)
-  issuesBlockers String?   @db.Text
-  photos         String?   @db.Text
-  submittedById  String
-  submittedBy    User      @relation("DailyReportSubmittedBy", fields: [submittedById], references: [id])
+  assignedById   String?
+  assignedBy     User?     @relation("AssignedByEmployee", fields: [assignedById], references: [id], onDelete: SetNull)
+  positionOnSite String?
+  startDate      DateTime
+  endDate        DateTime?
+  status         String    @default("Active") // "Active", "Completed", "Transferred", "Cancelled"
+  notes          String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  @@map("employee_assignments")
+}
+
+model Attendance {
+  id             String    @id @default(uuid())
+  companyId      String
+  employeeId     String
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  siteId         String?
+  site           Site?     @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  date           DateTime  @default(now()) // Legacy date field
+  attendanceDate DateTime  @default(now())
+  status         String    // "Present", "Absent", "Late", "On Leave", "Half Day", "Sick", "Permission", "Holiday"
+  checkInTime    DateTime?
+  checkOutTime   DateTime?
+  regularHours   Float     @default(8.0)
+  overtimeHours  Float     @default(0.0)
+  remarks        String?   @db.Text
+  notes          String?   @db.Text
+  recordedById   String?
+  recordedBy     User?     @relation("AttendanceRecordedBy", fields: [recordedById], references: [id])
+  approvedById   String?
+  approvedBy     User?     @relation("AttendanceApprovedBy", fields: [approvedById], references: [id])
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
   createdById    String?
   updatedById    String?
 
-  @@unique([siteId, date])
-  @@map("daily_reports")
+  @@map("attendance")
 }
 
-model MaintenanceRecord {
+model LeaveRequest {
   id              String    @id @default(uuid())
   companyId       String
-  machineId       String
-  machine         Machine   @relation(fields: [machineId], references: [id], onDelete: Cascade)
-  description     String    @db.Text
-  maintenanceType String    // "PREVENTIVE", "BREAKDOWN", "INSPECTION"
-  cost            Float
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  requestedById   String?
+  requestedBy     User?     @relation("LeaveRequestedBy", fields: [requestedById], references: [id])
+  approvedById    String?
+  approvedBy      User?     @relation("LeaveApprovedBy", fields: [approvedById], references: [id])
+  leaveType       String    // "Annual Leave", "Sick Leave", "Emergency Leave", "Maternity Leave", "Paternity Leave", "Unpaid Leave", "Permission", "Other"
   startDate       DateTime
-  endDate         DateTime?
+  endDate         DateTime
+  totalDays       Float     @default(1.0)
+  status          String    @default("Pending") // "Pending", "Approved", "Rejected", "Cancelled"
+  reason          String?   @db.Text
+  rejectionReason String?   @db.Text
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
-  createdById     String?
-  updatedById     String?
+
+  @@map("leave_requests")
+}
+
+model DailyReport {
+  id                  String    @id @default(uuid())
+  companyId           String
+  company             Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  projectId           String
+  project             Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  siteId              String
+  site                Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  date                DateTime  @default(now()) // Legacy date field
+  reportDate          DateTime  @default(now())
+  submittedById       String
+  submittedBy         User      @relation("DailyReportSubmittedBy", fields: [submittedById], references: [id])
+  approvedById        String?
+  approvedBy          User?     @relation("DailyReportApprovedBy", fields: [approvedById], references: [id])
+  status              String    @default("Draft") // "Draft", "Submitted", "Approved", "Rejected", "Cancelled"
+  weatherCondition    String    @default("Sunny") // "Sunny", "Cloudy", "Rainy", "Windy", "Dusty", "Partly Cloudy", "Other"
+  workCompleted       String    @db.Text
+  workPlannedTomorrow String?   @db.Text
+  issuesOrBlockers    String?   @db.Text
+  safetyIncidents     String?   @db.Text
+  qualityIssues       String?   @db.Text
+  generalNotes        String?   @db.Text
+  workersPresent      Int       @default(0)
+  workersAbsent       Int       @default(0)
+  totalRegularHours   Float     @default(0.0)
+  totalOvertimeHours  Float     @default(0.0)
+  machineryUsedCount  Int       @default(0)
+  machineryUsed       String?   @db.Text // Legacy summary text
+  materialsUsed       String?   @db.Text // Legacy summary text
+  fuelUsed            Float?    @default(0.0) // Legacy fuel summary
+  fuelUsedLiters      Float     @default(0.0)
+  materialsUsedValue  Float     @default(0.0)
+  photos              String?   @db.Text // JSON string array of photo URLs
+  documents           String?   @db.Text // JSON string array of doc URLs
+  submittedAt         DateTime?
+  approvedAt          DateTime?
+  rejectedAt          DateTime?
+  rejectionReason     String?   @db.Text
+  createdById         String?
+  updatedById         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  // Detail relations
+  machineryRecords    DailyReportMachinery[]
+  materialRecords     DailyReportMaterial[]
+  workerRecords       DailyReportWorker[]
+  photoRecords        DailyReportPhoto[]
+
+  @@map("daily_reports")
+}
+
+model DailyReportMachinery {
+  id             String      @id @default(uuid())
+  companyId      String
+  company        Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  dailyReportId  String
+  dailyReport    DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  machineId      String
+  machine        Machine     @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  operatorId     String?
+  operator       Employee?   @relation(fields: [operatorId], references: [id], onDelete: SetNull)
+  workingHours   Float       @default(0.0)
+  idleHours      Float       @default(0.0)
+  fuelUsedLiters Float       @default(0.0)
+  notes          String?     @db.Text
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  deletedAt      DateTime?
+
+  @@map("daily_report_machinery")
+}
+
+model DailyReportMaterial {
+  id              String        @id @default(uuid())
+  companyId       String
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  dailyReportId   String
+  dailyReport     DailyReport   @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  quantityUsed    Float         @default(0.0)
+  unit            String?
+  estimatedCost   Float         @default(0.0)
+  notes           String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  @@map("daily_report_materials")
+}
+
+model DailyReportWorker {
+  id               String      @id @default(uuid())
+  companyId        String
+  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  dailyReportId    String
+  dailyReport      DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  employeeId       String
+  employee         Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  attendanceStatus String      @default("Present")
+  regularHours     Float       @default(8.0)
+  overtimeHours    Float       @default(0.0)
+  notes            String?     @db.Text
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  deletedAt        DateTime?
+
+  @@map("daily_report_workers")
+}
+
+model DailyReportPhoto {
+  id            String      @id @default(uuid())
+  companyId     String
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  dailyReportId String
+  dailyReport   DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  fileUrl       String
+  caption       String?
+  uploadedById  String?
+  uploadedBy    User?       @relation("DailyReportPhotoUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+
+  @@map("daily_report_photos")
+}
+
+model MaintenanceRecord {
+  id                         String            @id @default(uuid())
+  companyId                  String
+  company                    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  machineId                  String
+  machine                    Machine           @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  projectId                  String?
+  project                    Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  siteId                     String?
+  site                       Site?             @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  reportedById               String?
+  reportedBy                 User?             @relation("MaintenanceReportedBy", fields: [reportedById], references: [id], onDelete: SetNull)
+  assignedMechanicId         String?
+  assignedMechanic           Employee?         @relation("MaintenanceMechanic", fields: [assignedMechanicId], references: [id], onDelete: SetNull)
+  maintenanceType            String            // "Preventive Maintenance", "Corrective Maintenance", "Breakdown Repair", "Inspection", "Oil Change", "Tire Service", "Hydraulic Service", "Electrical Repair", "Engine Repair", "General Service", "Other"
+  status                     String            @default("Reported") // "Reported", "Scheduled", "In Progress", "Completed", "Cancelled", "Deferred"
+  priority                   String            @default("Normal") // "Low", "Normal", "High", "Urgent", "Critical"
+  issueTitle                 String
+  issueDescription           String?           @db.Text
+  diagnosis                  String?           @db.Text
+  workPerformed              String?           @db.Text
+  partsUsedValue             Float             @default(0.0)
+  laborCost                  Float             @default(0.0)
+  externalServiceCost        Float             @default(0.0)
+  totalCost                  Float             @default(0.0)
+  downtimeHours              Float             @default(0.0)
+  reportedDate               DateTime          @default(now())
+  scheduledDate              DateTime?
+  startedAt                  DateTime?
+  completedAt                DateTime?
+  nextServiceDate            DateTime?
+  odometerOrHourMeterReading Float?
+  notes                      String?           @db.Text
+  createdById                String?
+  updatedById                String?
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+  deletedAt                  DateTime?
+
+  // Relations
+  partsUsed                  MaintenancePart[]
 
   @@map("maintenance_records")
+}
+
+model MaintenancePart {
+  id                  String            @id @default(uuid())
+  companyId           String
+  company             Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  maintenanceRecordId String
+  maintenanceRecord   MaintenanceRecord @relation(fields: [maintenanceRecordId], references: [id], onDelete: Cascade)
+  inventoryItemId     String
+  inventoryItem       InventoryItem     @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  quantityUsed        Float
+  unitCost            Float             @default(0.0)
+  totalCost           Float             @default(0.0)
+  notes               String?           @db.Text
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  deletedAt           DateTime?
+
+  @@map("maintenance_parts")
 }
 
 model AuditLog {
@@ -511,4 +868,60 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@map("audit_logs")
+}
+
+model Expense {
+  id               String    @id @default(uuid())
+  companyId        String
+  company          Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  projectId        String?
+  project          Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  siteId           String?
+  site             Site?     @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  machineId        String?
+  machine          Machine?  @relation(fields: [machineId], references: [id], onDelete: SetNull)
+  expenseCategory  String    // Fuel, Inventory / Materials, Machinery Rental, Maintenance, Labor, Transport, Subcontractor, Tools and Equipment, Site Office, Utilities, Permit / Government Fee, Miscellaneous, Other
+  expenseType      String?   // e.g. Operational, Direct, Overhead, Invoice
+  amount           Float
+  currency         String    @default("ETB")
+  expenseDate      DateTime
+  description      String?   @db.Text
+  vendorName       String?
+  receiptUrl       String?
+  referenceNumber  String?
+  recordedById     String?
+  recordedBy       User?     @relation("ExpenseRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  approvedById     String?
+  approvedBy       User?     @relation("ExpenseApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  status           String    @default("Recorded") // Draft, Recorded, Approved, Rejected, Cancelled
+  notes            String?   @db.Text
+  createdById      String?
+  updatedById      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  @@map("expenses")
+}
+
+model ProjectRevenue {
+  id            String    @id @default(uuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  amount        Float
+  currency      String    @default("ETB")
+  revenueDate   DateTime
+  description   String?   @db.Text
+  clientName    String?
+  invoiceNumber String?
+  status        String    @default("Recorded") // Draft, Recorded, Invoiced, Received
+  recordedById  String?
+  recordedBy    User?     @relation("RevenueRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@map("project_revenues")
 }

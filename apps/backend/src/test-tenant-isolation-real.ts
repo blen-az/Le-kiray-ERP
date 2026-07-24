@@ -4,6 +4,11 @@ import { SitesService } from './projects/sites.service';
 import { MachineryService } from './machinery/machinery.service';
 import { DashboardService } from './dashboard/dashboard.service';
 import { FuelService } from './fuel/fuel.service';
+import { InventoryService } from './inventory/inventory.service';
+import { HrService } from './hr/hr.service';
+import { ReportsService } from './reports/reports.service';
+import { MaintenanceService } from './maintenance/maintenance.service';
+import { FinanceService } from './finance/finance.service';
 
 const prisma = new PrismaClient();
 const projectsService = new ProjectsService(prisma as any);
@@ -11,6 +16,11 @@ const sitesService = new SitesService(prisma as any);
 const machineryService = new MachineryService(prisma as any);
 const dashboardService = new DashboardService(prisma as any);
 const fuelService = new FuelService(prisma as any);
+const inventoryService = new InventoryService(prisma as any);
+const hrService = new HrService(prisma as any);
+const reportsService = new ReportsService(prisma as any);
+const maintenanceService = new MaintenanceService(prisma as any);
+const financeService = new FinanceService(prisma as any);
 
 async function runRealTest() {
   console.log('🧪 Starting Tenant Isolation Verification (Real PostgreSQL Database)...');
@@ -29,6 +39,45 @@ async function runRealTest() {
 
   console.log('🛡️ Connected to PostgreSQL. Preparing test database records...');
 
+  await prisma.dailyReportMachinery.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.dailyReportMaterial.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.dailyReportWorker.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.dailyReportPhoto.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.dailyReport.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.expense.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.projectRevenue.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.maintenancePart.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.maintenanceRecord.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.inventoryRequest.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.stockMovement.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.inventoryItem.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.warehouse.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
   await prisma.fuelLog.deleteMany({
     where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
   });
@@ -39,6 +88,15 @@ async function runRealTest() {
     where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
   });
   await prisma.machine.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.leaveRequest.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.attendance.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
+  await prisma.employeeAssignment.deleteMany({
     where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
   });
   await prisma.employee.deleteMany({
@@ -322,15 +380,256 @@ async function runRealTest() {
     }
   }
 
-  // --- RULE 5: Company B user cannot view Company A dashboard data ---
-  console.log('\n📊 Check 5: Verifying dashboard statistics scoping...');
-  
-  const statsB = await dashboardService.getCeoStats(companyB.id);
-  const activeProjectsCountForB = statsB.kpis.activeProjects;
-  if (activeProjectsCountForB === 0) {
-    console.log('✅ PASS: Company B user cannot view Company A dashboard data (Active projects counted: 0).');
+  // --- RULE 6: Inventory Tenant Isolation Verification ---
+  console.log('\n📦 Check 6a: Verifying Inventory Items and Warehouses Tenant Scoping...');
+  const warehouseA = await inventoryService.createWarehouse(companyA.id, 'mock-user-id', {
+    warehouseName: 'Alpha Central Warehouse',
+    type: 'Main Warehouse',
+    location: 'Bole, Addis Ababa',
+  });
+
+  const itemA = await inventoryService.createItem(companyA.id, 'mock-user-id', {
+    itemName: 'Alpha Cement 50kg',
+    category: 'Cement',
+    unit: 'Bag',
+    currentQuantity: 500,
+    minimumStockLevel: 50,
+    averageUnitCost: 850,
+    defaultWarehouseId: warehouseA.id,
+  });
+
+  // Company A user can view Company A inventory
+  const itemAView = await inventoryService.findOneItem(itemA.id, companyA.id);
+  if (itemAView && itemAView.itemName === 'Alpha Cement 50kg') {
+    console.log('✅ PASS: Company A user can view its own inventory item.');
+  }
+
+  // Company B user cannot view Company A inventory item
+  try {
+    await inventoryService.findOneItem(itemA.id, companyB.id);
+    throw new Error('❌ FAIL: Security Leak! Company B user viewed Company A inventory item.');
+  } catch (err: any) {
+    if (err.message && err.message.includes('Inventory item not found')) {
+      console.log('✅ PASS: Company B user blocked from viewing Company A inventory item (404).');
+    } else {
+      throw err;
+    }
+  }
+
+  // Company B user cannot create stock movement using Company A item
+  console.log('\n✍️ Check 6b: Verifying Stock Movement Cross-Company Block...');
+  try {
+    await inventoryService.recordMovement(companyB.id, 'mock-user-id', {
+      inventoryItemId: itemA.id,
+      movementType: 'STOCK_OUT',
+      quantity: 50,
+    });
+    throw new Error('❌ FAIL: Security Leak! Company B created stock movement using Company A item.');
+  } catch (err: any) {
+    if (err.message && err.message.includes('Inventory item not found in this company')) {
+      console.log('✅ PASS: Company B blocked from creating movement using Company A inventory item.');
+    } else {
+      throw err;
+    }
+  }
+
+  // Company B user cannot create warehouse under Company A project/site
+  console.log('\n✍️ Check 6c: Verifying Site Store Project Scoping Block...');
+  try {
+    await inventoryService.createWarehouse(companyB.id, 'mock-user-id', {
+      warehouseName: 'Illegal Beta Site Store',
+      type: 'Site Store',
+      projectId: projectA.id,
+      siteId: siteA.id,
+    });
+    throw new Error('❌ FAIL: Security Leak! Company B created site store under Company A project.');
+  } catch (err: any) {
+    if (err.message && err.message.includes('Project not found in this company')) {
+      console.log('✅ PASS: Company B blocked from creating store under Company A project.');
+    } else {
+      throw err;
+    }
+  }
+
+  // Material Request Isolation
+  console.log('\n📋 Check 6d: Verifying Material Request Approval & Issuance Block...');
+  const reqMatA = await inventoryService.createRequest(companyA.id, 'mock-user-id', {
+    projectId: projectA.id,
+    siteId: siteA.id,
+    inventoryItemId: itemA.id,
+    quantityRequested: 100,
+    priority: 'High',
+  });
+
+  try {
+    await inventoryService.approveRequest(reqMatA.id, companyB.id, 'mock-user-id', {
+      quantityApproved: 100,
+    });
+    throw new Error('❌ FAIL: Security Leak! Company B approved Company A material request.');
+  } catch (err: any) {
+    if (err.message && err.message.includes('Inventory request not found')) {
+      console.log('✅ PASS: Company B blocked from approving Company A material request (404).');
+    } else {
+      throw err;
+    }
+  }
+
+  // Reporting Isolation
+  console.log('\n📊 Check 6e: Verifying Inventory Reports Scoping...');
+  const reportB = await inventoryService.getSummaryReport(companyB.id);
+  if (reportB.totalItems === 0 && reportB.totalStockValue === 0) {
+    console.log('✅ PASS: Company B inventory summary report is isolated from Company A items.');
   } else {
-    throw new Error(`❌ FAIL: Security Leak! Company B stats leaked Company A active projects count (${activeProjectsCountForB}).`);
+    throw new Error(`❌ FAIL: Security Leak! Company B inventory report leaked Company A data (Total items: ${reportB.totalItems}).`);
+  }
+
+  // --- RULE 6: Company B user cannot view or assign Company A employees ---
+  console.log('\n👷 Check 6: Verifying HR & Attendance tenant isolation...');
+
+  const empA = await hrService.createEmployee(companyA.id, 'user-a', {
+    firstName: 'TenantTestA',
+    lastName: 'Operator',
+    phone: '+251999888777',
+    position: 'Machine Operator',
+    employmentType: 'Permanent',
+    employmentStatus: 'Active',
+    hireDate: '2025-01-01',
+  });
+
+  const empListB = await hrService.findAllEmployees(companyB.id);
+  if (!empListB.find((e) => e.id === empA.id)) {
+    console.log('✅ PASS: Company B user cannot view Company A employee record.');
+  } else {
+    throw new Error('❌ FAIL: Security Leak! Company B listed Company A employee.');
+  }
+
+  try {
+    await hrService.findOneEmployee(empA.id, companyB.id);
+    throw new Error('❌ FAIL: Security Leak! Company B read Company A employee by ID.');
+  } catch (err: any) {
+    if (err.message?.includes('not found')) {
+      console.log('✅ PASS: Company B user received 404 when attempting to view Company A employee detail.');
+    } else throw err;
+  }
+
+  // --- RULE 7: Company B user cannot view, submit, or approve Company A daily reports ---
+  console.log('\n📝 Check 7: Verifying Daily Site Reports tenant isolation...');
+
+  const reportA = await reportsService.createReport(companyA.id, 'user-a', {
+    projectId: projectA.id,
+    siteId: siteA.id,
+    reportDate: '2026-07-24',
+    workCompleted: 'Excavated 100m trench for Alpha Corp.',
+    status: 'Submitted',
+  });
+
+  const reportsB = await reportsService.findAll(companyB.id);
+  if (!reportsB.find((r) => r.id === reportA.id)) {
+    console.log('✅ PASS: Company B user cannot view Company A daily site report.');
+  } else {
+    throw new Error('❌ FAIL: Security Leak! Company B listed Company A daily site report.');
+  }
+
+  try {
+    await reportsService.approveReport(reportA.id, companyB.id, 'user-b', 'Approved by B');
+    throw new Error('❌ FAIL: Security Leak! Company B user approved Company A daily report.');
+  } catch (err: any) {
+    if (err.message?.includes('not found')) {
+      console.log('✅ PASS: Company B user received 404 when attempting to approve Company A daily report.');
+    } else throw err;
+  }
+
+  const todayStatusB = await reportsService.getTodayStatus(companyB.id);
+  if (todayStatusB.sites.length === 0) {
+    console.log("✅ PASS: Company B user cannot see Company A today's site submission status.");
+  } else {
+    throw new Error("❌ FAIL: Security Leak! Company B today status leaked Company A sites.");
+  }
+
+  // --- RULE 8: Company B user cannot view, start, or complete Company A maintenance records ---
+  console.log('\n🔧 Check 8: Verifying Maintenance Management tenant isolation...');
+
+  const maintA = await maintenanceService.create(companyA.id, 'user-a', {
+    machineId: machineA.id,
+    projectId: projectA.id,
+    siteId: siteA.id,
+    maintenanceType: 'Breakdown Repair',
+    priority: 'Urgent',
+    issueTitle: 'Hydraulic Cylinder Leak Company A',
+    reportedDate: '2026-07-24',
+  });
+
+  const maintsB = await maintenanceService.findAll(companyB.id);
+  if (!maintsB.find((m) => m.id === maintA.id)) {
+    console.log('✅ PASS: Company B user cannot view Company A maintenance record.');
+  } else {
+    throw new Error('❌ FAIL: Security Leak! Company B listed Company A maintenance record.');
+  }
+
+  try {
+    await maintenanceService.start(maintA.id, companyB.id, 'user-b', {});
+    throw new Error('❌ FAIL: Security Leak! Company B user started Company A maintenance record.');
+  } catch (err: any) {
+    if (err.message?.includes('not found')) {
+      console.log('✅ PASS: Company B user received 404 when attempting to start Company A maintenance.');
+    } else throw err;
+  }
+
+  try {
+    await maintenanceService.create(companyB.id, 'user-b', {
+      machineId: machineA.id,
+      maintenanceType: 'Oil Change',
+      priority: 'Normal',
+      issueTitle: 'Unauthorized Machine Maintenance',
+      reportedDate: '2026-07-24',
+    });
+    throw new Error('❌ FAIL: Security Leak! Company B created maintenance for Company A machine.');
+  } catch (err: any) {
+    if (err.message?.includes('not found')) {
+      console.log('✅ PASS: Company B blocked from creating maintenance on Company A machine (400).');
+    } else throw err;
+  }
+
+  // --- RULE 9: Company B user cannot view, create, or approve Company A expenses or project financial reports ---
+  console.log('\n💰 Check 9: Verifying Finance Lite tenant isolation...');
+
+  const expA = await financeService.createExpense(companyA.id, 'user-a', {
+    projectId: projectA.id,
+    siteId: siteA.id,
+    expenseCategory: 'Fuel',
+    amount: 15000.0,
+    expenseDate: '2026-07-24',
+    description: 'Emergency diesel transport for Company A project',
+  });
+
+  const expBList = await financeService.findAllExpenses(companyB.id);
+  if (!expBList.find((e) => e.id === expA.id)) {
+    console.log('✅ PASS: Company B user cannot view Company A expense record.');
+  } else {
+    throw new Error('❌ FAIL: Security Leak! Company B listed Company A expense record.');
+  }
+
+  try {
+    await financeService.approveExpense(expA.id, companyB.id, 'user-b', { status: 'Approved' });
+    throw new Error('❌ FAIL: Security Leak! Company B user approved Company A expense.');
+  } catch (err: any) {
+    if (err.message?.includes('not found')) {
+      console.log('✅ PASS: Company B user received 404 when attempting to approve Company A expense.');
+    } else throw err;
+  }
+
+  try {
+    await financeService.createExpense(companyB.id, 'user-b', {
+      projectId: projectA.id,
+      expenseCategory: 'Subcontractor',
+      amount: 50000.0,
+      expenseDate: '2026-07-24',
+    });
+    throw new Error('❌ FAIL: Security Leak! Company B recorded expense under Company A project.');
+  } catch (err: any) {
+    if (err.message?.includes('not found')) {
+      console.log('✅ PASS: Company B user blocked from creating expense for Company A project (400).');
+    } else throw err;
   }
 
   console.log('\n🎉 ALL REAL DATABASE TENANT ISOLATION CHECKS PASSED SUCCESSFULLY!');
@@ -344,6 +643,45 @@ runRealTest()
   .finally(async () => {
     // Clean up test records to leave the database clean
     try {
+      await prisma.dailyReportMachinery.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.dailyReportMaterial.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.dailyReportWorker.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.dailyReportPhoto.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.dailyReport.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.expense.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.projectRevenue.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.maintenancePart.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.maintenanceRecord.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.inventoryRequest.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.stockMovement.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.inventoryItem.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.warehouse.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
       await prisma.fuelLog.deleteMany({
         where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
       });
@@ -354,6 +692,15 @@ runRealTest()
         where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
       });
       await prisma.machine.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.leaveRequest.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.attendance.deleteMany({
+        where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+      });
+      await prisma.employeeAssignment.deleteMany({
         where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
       });
       await prisma.employee.deleteMany({

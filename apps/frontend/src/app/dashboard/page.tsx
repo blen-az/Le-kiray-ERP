@@ -50,6 +50,10 @@ interface CeoStats {
       total: number;
     };
     lowStockAlertsCount: number;
+    totalStockValue?: number;
+    outOfStockCount?: number;
+    pendingMaterialRequestsCount?: number;
+    topConsumedItem?: string;
   };
   lowStockItems: Array<{
     id: string;
@@ -101,10 +105,14 @@ const fallbackData: CeoStats = {
     monthlyMaintenanceCost: 45000.0,
     totalMonthlyCost: 83675.0,
     attendanceToday: {
-      present: 4,
-      total: 5,
+      present: 2,
+      total: 2,
     },
-    lowStockAlertsCount: 1,
+    lowStockAlertsCount: 2,
+    totalStockValue: 12845000.0,
+    outOfStockCount: 1,
+    pendingMaterialRequestsCount: 2,
+    topConsumedItem: 'Cement 50kg (200 Bags)',
   },
   lowStockItems: [
     {
@@ -313,6 +321,53 @@ export default function CeoDashboard() {
         </Card>
       </div>
 
+      {/* Inventory Executive Summary Bar */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="bg-slate-900 text-white border-none">
+          <CardContent className="p-4">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Inventory Value</span>
+            <div className="text-xl font-extrabold text-emerald-400 mt-1">
+              {formatCurrency(data.kpis.totalStockValue || 12845000)}
+            </div>
+            <span className="text-[10px] text-slate-400 mt-1 block">Stored Assets & Materials</span>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-100 shadow-xs">
+          <CardContent className="p-4">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Low / Out-of-Stock Items</span>
+            <div className="text-xl font-black text-amber-600 mt-1">
+              {data.kpis.lowStockAlertsCount} Alert Items
+            </div>
+            <Link href="/dashboard/inventory/reports" className="text-[10px] text-[#0284c7] font-semibold hover:underline block mt-1">
+              View Re-order Report →
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-100 shadow-xs">
+          <CardContent className="p-4">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Pending Material Requests</span>
+            <div className="text-xl font-black text-[#0284c7] mt-1">
+              {data.kpis.pendingMaterialRequestsCount || 2} Requests
+            </div>
+            <Link href="/dashboard/inventory/requests" className="text-[10px] text-[#0284c7] font-semibold hover:underline block mt-1">
+              Review Site Requests →
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-100 shadow-xs">
+          <CardContent className="p-4">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Top Consumed Item</span>
+            <div className="text-sm font-bold text-slate-900 mt-1 truncate">
+              {data.kpis.topConsumedItem || 'Cement 50kg (200 Bags)'}
+            </div>
+            <span className="text-[10px] text-slate-500 font-medium mt-1 block">Bole & Hawassa Sites</span>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Main Charts & Breakdown Section */}
       <div className="grid gap-6 md:grid-cols-3">
         {/* Cost Breakdown Chart (Left 2 columns) */}
@@ -390,7 +445,7 @@ export default function CeoDashboard() {
               <CardTitle className="text-sm font-semibold text-slate-800">Daily Site Reports Summary</CardTitle>
               <CardDescription>Recent site activities submitted by construction site managers.</CardDescription>
             </div>
-            <Link href="/dashboard/reports">
+            <Link href="/dashboard/reports/daily-site">
               <button className="flex items-center gap-1 text-xs text-sky-600 hover:text-sky-800 font-semibold">
                 View all reports <ArrowUpRight size={14} />
               </button>
@@ -482,11 +537,14 @@ export default function CeoDashboard() {
 
           {/* Active Maintenance */}
           <Card>
-            <CardHeader className="pb-3 border-b border-slate-100">
+            <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-800">
                 <Wrench size={16} className="text-sky-500" />
                 Equipment Maintenance
               </CardTitle>
+              <Link href="/dashboard/maintenance" className="text-xs text-[#0284c7] font-semibold hover:underline">
+                View All →
+              </Link>
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
               {data.activeMaintenance.length === 0 ? (

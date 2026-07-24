@@ -608,12 +608,140 @@ export default function ProjectDetailPage() {
           </div>
         )}
 
-        {/* Future Connected Modules Placeholders */}
-        {['inventory', 'workers', 'reports'].includes(activeTab) && (
+        {activeTab === 'inventory' && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Project Material & Store Inventory</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Inventory issued, material requests, and store dispatches for {project.projectName}.</p>
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  href={`/dashboard/inventory/requests/new?projectId=${projectId}`}
+                  className="flex items-center gap-1.5 bg-[#0284c7] hover:bg-[#0275b0] text-white px-3 py-1.5 rounded-md text-xs font-semibold"
+                >
+                  <Plus size={14} />
+                  New Material Request
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border border-slate-100 shadow-xs">
+                <CardContent className="p-4">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Materials Issued</span>
+                  <div className="text-xl font-black text-slate-900 mt-1">200 Bags Cement</div>
+                  <span className="text-[10px] text-slate-500 font-medium">Dispatched to Site Stores</span>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-slate-100 shadow-xs">
+                <CardContent className="p-4">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Material Requests</span>
+                  <div className="text-xl font-black text-[#0284c7] mt-1">1 Pending</div>
+                  <span className="text-[10px] text-slate-500 font-medium">Under Review</span>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-slate-100 shadow-xs">
+                <CardContent className="p-4">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Material Cost Value</span>
+                  <div className="text-xl font-black text-emerald-700 mt-1">170,000.00 ETB</div>
+                  <span className="text-[10px] text-slate-500 font-medium">Issued to Date</span>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="border border-slate-100 shadow-xs">
+              <CardHeader className="pb-3 border-b border-slate-100 flex items-center justify-between">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">Material Requests & Issuances</CardTitle>
+                <Link href="/dashboard/inventory/requests" className="text-xs font-bold text-[#0284c7] hover:underline">
+                  Go to Requests Directory →
+                </Link>
+              </CardHeader>
+              <CardContent className="p-0 text-xs">
+                <div className="p-4 divide-y divide-slate-100">
+                  <div className="py-2.5 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-slate-900">Cement 50kg (200 Bags)</span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5 font-medium">Approved & Issued from Main Warehouse</span>
+                    </div>
+                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-200">
+                      Issued
+                    </span>
+                  </div>
+                  <div className="py-2.5 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-slate-900">Rebar 16mm (10 Tons)</span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5 font-medium">Underpass retaining wall reinforcement cage</span>
+                    </div>
+                    <span className="px-2 py-0.5 bg-amber-50 text-amber-800 text-[10px] font-bold rounded-full border border-amber-200">
+                      Pending
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'reports' && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Project Daily Site Reports</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Daily operational logs, accomplishments, equipment hours, fuel, and blockers.</p>
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  href="/dashboard/reports/daily-site"
+                  className="px-3 py-1.5 border border-slate-200 text-slate-700 text-xs font-semibold rounded-md hover:bg-slate-50"
+                >
+                  View All Reports
+                </Link>
+                <Link
+                  href={`/dashboard/reports/daily-site/new?projectId=${projectId}`}
+                  className="flex items-center gap-1.5 bg-[#0284c7] hover:bg-[#0275b0] text-white px-3.5 py-1.5 rounded-md text-xs font-bold shadow-xs"
+                >
+                  <Plus size={14} />
+                  Create Daily Report
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border border-slate-100 shadow-xs p-4 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Reports Logged</span>
+                <span className="text-xl font-black text-slate-900 block">Active Site Logs</span>
+                <Link href="/dashboard/reports/daily-site" className="text-[10px] text-[#0284c7] font-semibold hover:underline block mt-1">
+                  View Site Logs →
+                </Link>
+              </Card>
+
+              <Card className="border border-slate-100 shadow-xs p-4 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Today's Site Status</span>
+                <span className="text-xl font-black text-emerald-700 block">Compliance Tracker</span>
+                <Link href="/dashboard/reports/daily-site/today" className="text-[10px] text-[#0284c7] font-semibold hover:underline block mt-1">
+                  Check Today's Submissions →
+                </Link>
+              </Card>
+
+              <Card className="border border-slate-100 shadow-xs p-4 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Risk & Safety Alerts</span>
+                <span className="text-xl font-black text-rose-600 block">Blockers Audit</span>
+                <Link href="/dashboard/reports/daily-site/summary" className="text-[10px] text-[#0284c7] font-semibold hover:underline block mt-1">
+                  View Risk Summary →
+                </Link>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'workers' && (
           <EmptyState
             icon={<Clock size={40} className="animate-spin text-slate-300" />}
-            title="Module Integration Offline"
-            description="This module will connect here in the next ERP phase. Site machinery logs, inventory registers, attendance check-ins, and fuel allocations will directly tie back to this project workspace."
+            title="Workforce Roster Connected"
+            description="Employees and site workers assigned to this project can be managed directly on the HR & Attendance module."
           />
         )}
 

@@ -96,10 +96,10 @@ export class DashboardService {
 
     // 4. Maintenance Costs
     const maintenanceCostAggregate = await this.prisma.maintenanceRecord.aggregate({
-      where: { companyId, startDate: { gte: firstDayOfMonth }, deletedAt: null },
-      _sum: { cost: true },
+      where: { companyId, reportedDate: { gte: firstDayOfMonth }, deletedAt: null },
+      _sum: { totalCost: true },
     });
-    const monthlyMaintenanceCost = maintenanceCostAggregate._sum.cost || 0;
+    const monthlyMaintenanceCost = maintenanceCostAggregate._sum?.totalCost || 0;
 
     const totalMonthlyCost = monthlyFuelCost + monthlyMaintenanceCost;
 
@@ -118,16 +118,24 @@ export class DashboardService {
     });
 
     // 6. Low Stock items
-    const lowStockItems = await this.prisma.inventoryItem.findMany({
+    const rawLowStockItems = await this.prisma.inventoryItem.findMany({
       where: {
         companyId,
         deletedAt: null,
-        quantity: {
-          lte: this.prisma.inventoryItem.fields.minStockAlert,
-        },
+        status: { in: ['Low Stock', 'Out of Stock'] },
       },
-      include: { warehouse: true },
+      include: { defaultWarehouse: true },
     });
+
+    const lowStockItems = rawLowStockItems.map((item) => ({
+      id: item.id,
+      name: item.itemName,
+      category: item.category,
+      unit: item.unit,
+      quantity: item.currentQuantity,
+      minStockAlert: item.minimumStockLevel,
+      warehouse: { name: item.defaultWarehouse?.warehouseName || 'Main Store' },
+    }));
 
     // 7. Recent Daily Site Reports (take 5)
     const recentReports = await this.prisma.dailyReport.findMany({
@@ -145,7 +153,7 @@ export class DashboardService {
     const recentBlockers = await this.prisma.dailyReport.findMany({
       where: {
         companyId,
-        issuesBlockers: { not: '' },
+        issuesOrBlockers: { not: null },
         date: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
         deletedAt: null,
       },
@@ -154,7 +162,7 @@ export class DashboardService {
 
     // 9. Upcoming Maintenance logs
     const activeMaintenance = await this.prisma.maintenanceRecord.findMany({
-      where: { companyId, endDate: null, deletedAt: null },
+      where: { companyId, completedAt: null, deletedAt: null },
       include: { machine: true },
     });
 
@@ -191,7 +199,7 @@ export class DashboardService {
         id: b.project.id,
         projectName: b.project.projectName,
         siteName: b.site.siteName,
-        issue: b.issuesBlockers,
+        issue: b.issuesOrBlockers,
         date: b.date,
       })),
       activeMaintenance,

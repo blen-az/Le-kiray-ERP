@@ -12,6 +12,7 @@ import {
   Users,
   Wrench,
   FileText,
+  DollarSign,
   Settings,
   LogOut,
   User,
@@ -32,9 +33,10 @@ export default function Sidebar({ className }: SidebarProps) {
     { name: 'Inventory & Materials', href: '/dashboard/inventory', icon: Warehouse },
     { name: 'Fuel', href: '/dashboard/fuel', icon: Droplet },
     { name: 'HR & Attendance', href: '/dashboard/hr', icon: Users },
-    { name: 'Maintenance', href: '/dashboard/maintenance', icon: Wrench, isPlaceholder: true },
+    { name: 'Maintenance', href: '/dashboard/maintenance', icon: Wrench },
     { name: 'Daily Reports', href: '/dashboard/reports', icon: FileText },
-    { name: 'Settings', href: '/dashboard/settings', icon: Settings, isPlaceholder: true },
+    { name: 'Finance Lite', href: '/dashboard/finance', icon: DollarSign },
+    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
 
   return (
@@ -91,11 +93,6 @@ export default function Sidebar({ className }: SidebarProps) {
             >
               <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'} />
               <span>{item.name}</span>
-              {item.isPlaceholder && (
-                <span className="ml-auto text-[8px] bg-slate-700/80 text-slate-300 font-semibold px-1 rounded-sm border border-slate-600 uppercase tracking-wide">
-                  Soon
-                </span>
-              )}
             </Link>
           );
         })}

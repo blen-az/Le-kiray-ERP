@@ -51,7 +51,7 @@ export class MachineryService {
         },
         maintenanceRecords: {
           where: { deletedAt: null },
-          orderBy: { startDate: 'desc' },
+          orderBy: { reportedDate: 'desc' },
         },
         fuelLogs: {
           where: { deletedAt: null },

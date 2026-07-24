@@ -1,349 +1,336 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Users, Plus, Search, MapPin, Phone, UserPlus, CheckCircle, Clock, XCircle, Coffee } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Badge } from '../../../components/ui/badge';
+import Link from 'next/link';
+import {
+  Users,
+  UserPlus,
+  UserCheck,
+  UserX,
+  Calendar,
+  Clock,
+  Briefcase,
+  Building2,
+  Plus,
+  Search,
+  Filter,
+  ArrowUpRight,
+  AlertCircle,
+  FileCheck2,
+  CalendarCheck,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { LoadingState } from '@/components/ui/loading-state';
+import { EmployeeStatusBadge } from '@/components/hr/EmployeeStatusBadge';
+import { AttendanceStatusBadge } from '@/components/hr/AttendanceStatusBadge';
+import { LeaveStatusBadge } from '@/components/hr/LeaveStatusBadge';
 
-interface Employee {
-  id: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  phone: string | null;
-  site: { name: string; project: { name: string } } | null;
-  attendanceToday?: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE' | 'PENDING';
+interface HrKpis {
+  totalEmployees: number;
+  activeEmployees: number;
+  onLeaveEmployees: number;
+  presentToday: number;
+  absentToday: number;
+  lateToday: number;
+  overtimeHoursThisWeek: number;
+  pendingLeaveRequests: number;
 }
 
-const fallbackEmployees: Employee[] = [
-  { id: 'e-1', firstName: 'Abebe', lastName: 'Kebede', role: 'OPERATOR', phone: '+251911223344', site: { name: 'Olympia Junction Site', project: { name: 'Bole Road Expansion' } }, attendanceToday: 'PRESENT' },
-  { id: 'e-2', firstName: 'Tariku', lastName: 'Mengistu', role: 'OPERATOR', phone: '+251912445566', site: { name: 'Rwanda Traffic Circle Site', project: { name: 'Bole Road Expansion' } }, attendanceToday: 'LATE' },
-  { id: 'e-3', firstName: 'Genet', lastName: 'Alemu', role: 'LABORER', phone: '+251915998877', site: { name: 'Olympia Junction Site', project: { name: 'Bole Road Expansion' } }, attendanceToday: 'PRESENT' },
-  { id: 'e-4', firstName: 'Zewdu', lastName: 'Hailu', role: 'LABORER', phone: '+251913334455', site: { name: 'Hawassa Lake Side site', project: { name: 'Hawassa Housing Project' } }, attendanceToday: 'ON_LEAVE' },
-  { id: 'e-5', firstName: 'Fasil', lastName: 'Demeke', role: 'FOREMAN', phone: '+251919776655', site: { name: 'Olympia Junction Site', project: { name: 'Bole Road Expansion' } }, attendanceToday: 'PRESENT' },
-];
+interface RecentAttendance {
+  id: string;
+  attendanceDate: string;
+  status: string;
+  regularHours: number;
+  overtimeHours: number;
+  notes?: string;
+  employee?: { firstName: string; lastName: string; position: string; employeeCode?: string };
+  project?: { projectName: string };
+  site?: { siteName: string };
+}
 
-export default function HrPage() {
-  const [employees, setEmployees] = useState<Employee[]>(fallbackEmployees);
+interface PendingLeave {
+  id: string;
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  reason?: string;
+  employee?: { firstName: string; lastName: string; position: string };
+}
+
+export default function HrDashboardPage() {
+  const [kpis, setKpis] = useState<HrKpis>({
+    totalEmployees: 11,
+    activeEmployees: 10,
+    onLeaveEmployees: 1,
+    presentToday: 5,
+    absentToday: 1,
+    lateToday: 1,
+    overtimeHoursThisWeek: 16,
+    pendingLeaveRequests: 1,
+  });
+
+  const [recentAttendance, setRecentAttendance] = useState<RecentAttendance[]>([
+    {
+      id: 'att-1',
+      attendanceDate: new Date().toISOString(),
+      status: 'Present',
+      regularHours: 8,
+      overtimeHours: 2,
+      employee: { firstName: 'Abebe', lastName: 'Kebede', position: 'Machine Operator', employeeCode: 'EMP-001' },
+      project: { projectName: 'Bole Road Expansion' },
+      site: { siteName: 'Olympia Junction Site' },
+    },
+    {
+      id: 'att-2',
+      attendanceDate: new Date().toISOString(),
+      status: 'Late',
+      regularHours: 7,
+      overtimeHours: 0,
+      notes: 'Traffic delay at Megena',
+      employee: { firstName: 'Dawit', lastName: 'Tesfaye', position: 'Driver', employeeCode: 'EMP-003' },
+      project: { projectName: 'Bole Road Expansion' },
+      site: { siteName: 'Olympia Junction Site' },
+    },
+    {
+      id: 'att-3',
+      attendanceDate: new Date().toISOString(),
+      status: 'Absent',
+      regularHours: 0,
+      overtimeHours: 0,
+      notes: 'Unannounced absence',
+      employee: { firstName: 'Tariku', lastName: 'Mengistu', position: 'Machine Operator', employeeCode: 'EMP-011' },
+      project: { projectName: 'Hawassa Housing Project' },
+      site: { siteName: 'Hawassa Lake Side site' },
+    },
+  ]);
+
+  const [pendingLeaves, setPendingLeaves] = useState<PendingLeave[]>([
+    {
+      id: 'l-1',
+      leaveType: 'Annual Leave',
+      startDate: new Date(Date.now() + 5 * 86400000).toISOString(),
+      endDate: new Date(Date.now() + 12 * 86400000).toISOString(),
+      totalDays: 7,
+      reason: 'Family vacation and annual holiday leave.',
+      employee: { firstName: 'Abebe', lastName: 'Kebede', position: 'Machine Operator' },
+    },
+  ]);
+
   const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Form states
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [role, setRole] = useState('LABORER');
-  const [phone, setPhone] = useState('');
+  const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
   useEffect(() => {
-    const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-
-    async function fetchData() {
+    async function loadHrSummary() {
       if (useMockData) {
-        setEmployees(fallbackEmployees);
         setLoading(false);
         return;
       }
 
       try {
-        const empRes = await fetch(`${apiUrl}/hr/employees`);
-        if (!empRes.ok) throw new Error('Failed to load employees list from API');
-        const emps = await empRes.json();
+        const [sumRes, attRes, leaveRes] = await Promise.all([
+          fetch(`${apiUrl}/hr/reports/summary`),
+          fetch(`${apiUrl}/hr/attendance`),
+          fetch(`${apiUrl}/hr/leave-requests?status=Pending`),
+        ]);
 
-        const attRes = await fetch(`${apiUrl}/hr/attendance`);
-        const atts = attRes.ok ? await attRes.json() : [];
-
-        const combined = emps.map((e: any) => {
-          const matchingAtt = atts.find((a: any) => a.employeeId === e.id);
-          return {
-            ...e,
-            attendanceToday: matchingAtt ? matchingAtt.status : 'PENDING',
-          };
-        });
-
-        setEmployees(combined);
-        setError(null);
-      } catch (err: any) {
-        console.error('API Error:', err);
-        setError(err.message || 'Could not connect to ERP server');
+        if (sumRes.ok) {
+          const sumData = await sumRes.json();
+          setKpis(sumData.kpis);
+        }
+        if (attRes.ok) {
+          const attData = await attRes.json();
+          setRecentAttendance(attData.slice(0, 5));
+        }
+        if (leaveRes.ok) {
+          const leaveData = await leaveRes.json();
+          setPendingLeaves(leaveData);
+        }
+      } catch (err) {
+        console.error('Error fetching HR summary:', err);
       } finally {
         setLoading(false);
       }
     }
-    fetchData();
-  }, []);
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!firstName.trim() || !lastName.trim()) return;
+    loadHrSummary();
+  }, [apiUrl, useMockData]);
 
-    const newEmp = {
-      id: Math.random().toString(),
-      firstName,
-      lastName,
-      role,
-      phone,
-      site: { name: 'Olympia Junction Site', project: { name: 'Bole Road Expansion' } },
-      attendanceToday: 'PENDING' as any,
-    };
-
-    try {
-      const res = await fetch('http://localhost:4000/api/hr/employees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstName, lastName, role, phone, siteId: 'any-site' }),
-      });
-      if (res.ok) {
-        const saved = await res.json();
-        setEmployees([...employees, { ...saved, attendanceToday: 'PENDING' }]);
-      } else {
-        setEmployees([...employees, newEmp]);
-      }
-    } catch {
-      setEmployees([...employees, newEmp]);
-    }
-
-    setFirstName('');
-    setLastName('');
-    setPhone('');
-    setShowAddForm(false);
-  };
-
-  const markAttendance = async (empId: string, status: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE') => {
-    const updated = employees.map((e) => {
-      if (e.id === empId) {
-        return { ...e, attendanceToday: status };
-      }
-      return e;
-    });
-    setEmployees(updated);
-
-    try {
-      await fetch('http://localhost:4000/api/hr/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          employeeId: empId,
-          date: new Date().toISOString(),
-          status,
-        }),
-      });
-    } catch {
-      console.warn('Offline: attendance saved locally.');
-    }
-  };
-
-  if (loading) {
-    return <div className="text-center py-12 text-slate-500 text-xs">Loading employee registry...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg max-w-2xl mx-auto my-12 shadow-xs">
-        <h3 className="font-bold text-sm">ERP Connection Error</h3>
-        <p className="text-xs mt-1">{error}</p>
-        <p className="text-xs mt-3 text-slate-500 border-t border-rose-200/50 pt-2 font-medium">
-          Ensure the backend NestJS service is running and accessible. Or toggle <code>NEXT_PUBLIC_USE_MOCK_DATA=true</code> in the environment.
-        </p>
-      </div>
-    );
-  }
+  if (loading) return <LoadingState message="Loading HR & Site Workforce Analytics..." />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 animate-fadeIn">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">HR & Attendance</h2>
-          <p className="text-slate-500 text-xs">Register operators and field workers, allocate them to sites, and mark daily attendance.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">HR & Workforce Management</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Track Ethiopian site workers, machinery operators, daily check-ins, overtime, and leave requests.</p>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center gap-1.5 bg-[#0284c7] hover:bg-[#0275b0] text-white px-4 py-2 rounded-md text-xs font-semibold shadow-xs transition-colors"
-        >
-          <Plus size={16} />
-          {showAddForm ? 'Cancel' : 'Add Employee'}
-        </button>
+
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/dashboard/hr/employees/new"
+            className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-md text-xs font-semibold shadow-xs"
+          >
+            <UserPlus size={14} />
+            New Employee
+          </Link>
+          <Link
+            href="/dashboard/hr/assignments/new"
+            className="flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-md text-xs font-semibold shadow-xs"
+          >
+            <Briefcase size={14} />
+            Assign Worker
+          </Link>
+          <Link
+            href="/dashboard/hr/attendance/new"
+            className="flex items-center gap-1.5 bg-[#0284c7] hover:bg-[#0275b0] text-white px-3.5 py-1.5 rounded-md text-xs font-semibold shadow-xs"
+          >
+            <CalendarCheck size={14} />
+            Record Attendance
+          </Link>
+        </div>
       </div>
 
-      {showAddForm && (
-        <Card className="max-w-xl animate-fadeIn">
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold">Add Field Staff</CardTitle>
-            <CardDescription>Enter primary phone number, job role, and project site assignment.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <label className="text-xs font-semibold text-slate-700">First Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="e.g. Abebe"
-                    className="px-3 py-2 text-xs border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-sky-500 text-slate-700"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-xs font-semibold text-slate-700">Last Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="e.g. Kebede"
-                    className="px-3 py-2 text-xs border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-sky-500 text-slate-700"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <label className="text-xs font-semibold text-slate-700">Phone</label>
-                  <input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="e.g. +251911223344"
-                    className="px-3 py-2 text-xs border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-sky-500 text-slate-700"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-xs font-semibold text-slate-700">Job Role</label>
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="px-3 py-2 text-xs border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-sky-500 text-slate-700"
-                  >
-                    <option value="OPERATOR">HEAVY MACHINE OPERATOR</option>
-                    <option value="LABORER">FIELD LABORER</option>
-                    <option value="FOREMAN">SITE FOREMAN</option>
-                    <option value="SITE_MANAGER">SITE MANAGER</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md transition-colors shadow-xs"
-              >
-                Register Employee
-              </button>
-            </form>
+      {/* Primary KPI Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border border-slate-100 shadow-xs">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Workforce</span>
+              <div className="text-2xl font-black text-slate-900 mt-1">{kpis.totalEmployees} Employees</div>
+              <span className="text-[10px] text-emerald-600 font-semibold">{kpis.activeEmployees} Active on roster</span>
+            </div>
+            <div className="p-3 bg-sky-50 text-[#0284c7] rounded-lg">
+              <Users size={20} />
+            </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Roster & Attendance Matrix */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold">Field Staff & Attendance Log</CardTitle>
-          <CardDescription>Daily check-in logs. Site managers can mark check-ins directly.</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto p-0">
-          <table className="w-full text-xs text-left text-slate-500">
-            <thead className="text-[10px] text-slate-700 uppercase bg-slate-50 border-y border-slate-200 font-bold">
-              <tr>
-                <th className="px-6 py-3">Employee Name</th>
-                <th className="px-6 py-3">Role</th>
-                <th className="px-6 py-3">Contact</th>
-                <th className="px-6 py-3">Assigned Site</th>
-                <th className="px-6 py-3">Status Today</th>
-                <th className="px-6 py-3 text-right">Quick Mark Attendance</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {employees.map((emp) => (
-                <tr key={emp.id} className="hover:bg-slate-50/50">
-                  <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs uppercase">
-                      {emp.firstName[0]}
-                      {emp.lastName[0]}
+        <Card className="border border-slate-100 shadow-xs">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Present Today</span>
+              <div className="text-2xl font-black text-emerald-700 mt-1">{kpis.presentToday} Present</div>
+              <span className="text-[10px] text-rose-500 font-semibold">{kpis.absentToday} Absent • {kpis.lateToday} Late</span>
+            </div>
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+              <UserCheck size={20} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-100 shadow-xs">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Overtime (This Week)</span>
+              <div className="text-2xl font-black text-slate-900 mt-1">{kpis.overtimeHoursThisWeek} Hours</div>
+              <span className="text-[10px] text-slate-500 font-medium">Logged across site projects</span>
+            </div>
+            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+              <Clock size={20} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-100 shadow-xs">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pending Leave</span>
+              <div className="text-2xl font-black text-amber-600 mt-1">{kpis.pendingLeaveRequests} Requests</div>
+              <Link href="/dashboard/hr/leave" className="text-[10px] text-[#0284c7] font-semibold hover:underline">
+                Review Requests →
+              </Link>
+            </div>
+            <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
+              <Calendar size={20} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Grid: Recent Attendance & Pending Leave */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Attendance */}
+        <Card className="lg:col-span-2 border border-slate-100 shadow-xs">
+          <CardHeader className="pb-3 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-bold text-slate-900">Recent Site Check-ins</CardTitle>
+              <CardDescription className="text-xs text-slate-500">Live attendance status reported from project sites today.</CardDescription>
+            </div>
+            <Link href="/dashboard/hr/attendance" className="text-xs font-bold text-[#0284c7] hover:underline">
+              View Full Register →
+            </Link>
+          </CardHeader>
+          <CardContent className="p-0 text-xs">
+            <div className="divide-y divide-slate-100">
+              {recentAttendance.map((a) => (
+                <div key={a.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50/50">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-slate-900">
+                        {a.employee?.firstName} {a.employee?.lastName}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">({a.employee?.employeeCode})</span>
+                      <AttendanceStatusBadge status={a.status} />
                     </div>
-                    {emp.firstName} {emp.lastName}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-semibold text-slate-600">{emp.role}</span>
-                  </td>
-                  <td className="px-6 py-4 text-slate-500 font-medium">
-                    <span className="flex items-center gap-1">
-                      <Phone size={12} className="text-slate-400" />
-                      {emp.phone || 'N/A'}
+                    <span className="text-[10px] text-slate-500 block">
+                      {a.employee?.position} • {a.project?.projectName} ({a.site?.siteName})
                     </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    {emp.site ? (
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-slate-800 flex items-center gap-1">
-                          <MapPin size={11} className="text-sky-500" />
-                          {emp.site.name}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-medium ml-3.5">
-                          {emp.site.project.name}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-slate-400 italic">Not Assigned</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <Badge
-                      variant={
-                        emp.attendanceToday === 'PRESENT'
-                          ? 'success'
-                          : emp.attendanceToday === 'LATE'
-                          ? 'warning'
-                          : emp.attendanceToday === 'ABSENT'
-                          ? 'destructive'
-                          : emp.attendanceToday === 'ON_LEAVE'
-                          ? 'info'
-                          : 'outline'
-                      }
-                      className="text-[10px] py-0 px-2 font-bold"
-                    >
-                      {emp.attendanceToday || 'PENDING'}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        title="Present"
-                        onClick={() => markAttendance(emp.id, 'PRESENT')}
-                        className="p-1 hover:bg-slate-100 rounded text-emerald-600 hover:text-emerald-800 transition-colors"
-                      >
-                        <CheckCircle size={15} />
-                      </button>
-                      <button
-                        title="Late"
-                        onClick={() => markAttendance(emp.id, 'LATE')}
-                        className="p-1 hover:bg-slate-100 rounded text-amber-500 hover:text-amber-700 transition-colors"
-                      >
-                        <Clock size={15} />
-                      </button>
-                      <button
-                        title="Absent"
-                        onClick={() => markAttendance(emp.id, 'ABSENT')}
-                        className="p-1 hover:bg-slate-100 rounded text-rose-500 hover:text-rose-700 transition-colors"
-                      >
-                        <XCircle size={15} />
-                      </button>
-                      <button
-                        title="On Leave"
-                        onClick={() => markAttendance(emp.id, 'ON_LEAVE')}
-                        className="p-1 hover:bg-slate-100 rounded text-sky-500 hover:text-sky-700 transition-colors"
-                      >
-                        <Coffee size={15} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold text-slate-800 block">{a.regularHours}h Reg {a.overtimeHours > 0 ? `+ ${a.overtimeHours}h OT` : ''}</span>
+                    <span className="text-[10px] text-slate-400 block">{new Date(a.attendanceDate).toLocaleDateString()}</span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending Leave Requests */}
+        <Card className="border border-slate-100 shadow-xs">
+          <CardHeader className="pb-3 border-b border-slate-100 flex items-center justify-between">
+            <CardTitle className="text-sm font-bold text-slate-900">Pending Leave Approvals</CardTitle>
+            <Link href="/dashboard/hr/leave" className="text-xs font-bold text-[#0284c7] hover:underline">
+              Directory →
+            </Link>
+          </CardHeader>
+          <CardContent className="p-0 text-xs">
+            {pendingLeaves.length === 0 ? (
+              <div className="p-6 text-center text-slate-400">No pending leave requests.</div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {pendingLeaves.map((l) => (
+                  <div key={l.id} className="p-3.5 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="font-bold text-slate-900 block">
+                          {l.employee?.firstName} {l.employee?.lastName}
+                        </span>
+                        <span className="text-[10px] text-slate-400">{l.employee?.position}</span>
+                      </div>
+                      <LeaveStatusBadge status="Pending" />
+                    </div>
+                    <div className="p-2 bg-slate-50 border border-slate-100 rounded text-[11px] text-slate-700">
+                      <span className="font-bold">{l.leaveType}</span> ({l.totalDays} days)
+                      <p className="text-[10px] text-slate-500 mt-0.5">{l.reason}</p>
+                    </div>
+                    <Link
+                      href={`/dashboard/hr/leave/${l.id}`}
+                      className="text-xs font-bold text-[#0284c7] hover:underline block text-right"
+                    >
+                      Review & Approve →
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
