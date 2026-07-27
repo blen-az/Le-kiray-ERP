@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { formatCurrency } from '@/lib/utils';
+import RequirePermission from '@/components/auth/RequirePermission';
 
 interface ProjectProfitability {
   projectId: string;
@@ -94,6 +95,7 @@ export default function ProfitabilityPage() {
   const overBudgetCount = projects.filter((p) => p.isOverBudget || (p.budgetUtilization || 0) > 100).length;
 
   return (
+    <RequirePermission permission="finance:profitability">
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/finance" className="p-2 text-slate-500 hover:bg-slate-100 rounded-md">
@@ -214,5 +216,6 @@ export default function ProfitabilityPage() {
         </div>
       </div>
     </div>
+    </RequirePermission>
   );
 }

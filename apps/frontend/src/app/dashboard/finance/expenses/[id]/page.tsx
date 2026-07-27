@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { ExpenseCategoryBadge } from '@/components/finance/ExpenseCategoryBadge';
 import { ExpenseStatusBadge } from '@/components/finance/ExpenseStatusBadge';
+import { PermissionGate } from '@/components/auth/RequirePermission';
 import { formatCurrency } from '@/lib/utils';
 
 interface ExpenseDetail {
@@ -199,44 +200,50 @@ export default function ExpenseDetailPage() {
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2">
           {expense.status !== 'Approved' && (
-            <Link
-              href={`/dashboard/finance/expenses/${id}/edit`}
-              className="flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-md text-xs font-semibold"
-            >
-              <Edit3 size={15} />
-              Edit
-            </Link>
+            <PermissionGate permission="finance:update">
+              <Link
+                href={`/dashboard/finance/expenses/${id}/edit`}
+                className="flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-md text-xs font-semibold"
+              >
+                <Edit3 size={15} />
+                Edit
+              </Link>
+            </PermissionGate>
           )}
 
           {expense.status === 'Recorded' && (
-            <>
-              <button
-                onClick={handleApprove}
-                disabled={actionLoading}
-                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-md text-xs font-bold disabled:opacity-50"
-              >
-                <CheckCircle2 size={15} />
-                Approve
-              </button>
-              <button
-                onClick={handleReject}
-                disabled={actionLoading}
-                className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold disabled:opacity-50"
-              >
-                <XCircle size={15} />
-                Reject
-              </button>
-            </>
+            <PermissionGate permission="finance:approve">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleApprove}
+                  disabled={actionLoading}
+                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-md text-xs font-bold disabled:opacity-50"
+                >
+                  <CheckCircle2 size={15} />
+                  Approve
+                </button>
+                <button
+                  onClick={handleReject}
+                  disabled={actionLoading}
+                  className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold disabled:opacity-50"
+                >
+                  <XCircle size={15} />
+                  Reject
+                </button>
+              </div>
+            </PermissionGate>
           )}
 
-          <button
-            onClick={handleDelete}
-            disabled={actionLoading}
-            className="p-2 text-rose-500 hover:bg-rose-50 rounded-md"
-            title="Delete Expense"
-          >
-            <Trash2 size={16} />
-          </button>
+          <PermissionGate permission="finance:delete">
+            <button
+              onClick={handleDelete}
+              disabled={actionLoading}
+              className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-md text-xs font-bold disabled:opacity-50"
+            >
+              <Trash2 size={15} />
+              Delete
+            </button>
+          </PermissionGate>
         </div>
       </div>
 

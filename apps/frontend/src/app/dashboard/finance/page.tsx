@@ -26,6 +26,7 @@ import { ExpenseCategoryBadge } from '@/components/finance/ExpenseCategoryBadge'
 import { ExpenseStatusBadge } from '@/components/finance/ExpenseStatusBadge';
 import { CostRiskBadge } from '@/components/finance/CostRiskBadge';
 import { formatCurrency } from '@/lib/utils';
+import { PermissionGate } from '@/components/auth/RequirePermission';
 import {
   ResponsiveContainer,
   BarChart,
@@ -168,13 +169,15 @@ export default function FinanceDashboardPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Link
-            href="/dashboard/finance/profitability"
-            className="flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3.5 py-1.5 rounded-md text-xs font-semibold shadow-xs"
-          >
-            <TrendingUp size={14} />
-            Profitability Estimator
-          </Link>
+          <PermissionGate permission="finance:profitability">
+            <Link
+              href="/dashboard/finance/profitability"
+              className="flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3.5 py-1.5 rounded-md text-xs font-semibold shadow-xs"
+            >
+              <TrendingUp size={14} />
+              Profitability Estimator
+            </Link>
+          </PermissionGate>
           <Link
             href="/dashboard/finance/reports"
             className="flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3.5 py-1.5 rounded-md text-xs font-semibold shadow-xs"

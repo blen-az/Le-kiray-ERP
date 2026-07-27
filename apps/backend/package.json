@@ -21,7 +21,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "test:tenant": "ts-node src/test-tenant-isolation.ts",
-    "test:tenant-real": "ts-node src/test-tenant-isolation-real.ts"
+    "test:tenant-real": "ts-node src/test-tenant-isolation-real.ts",
+    "test:rbac": "ts-node src/test-rbac-permissions.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

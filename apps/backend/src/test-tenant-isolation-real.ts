@@ -111,6 +111,9 @@ async function runRealTest() {
   await prisma.company.deleteMany({
     where: { id: { in: ['real-test-co-a', 'real-test-co-b'] } },
   });
+  await prisma.user.deleteMany({
+    where: { companyId: { in: ['real-test-co-a', 'real-test-co-b'] } },
+  });
 
   // 1. Setup two distinct companies
   const companyA = await prisma.company.create({
@@ -128,6 +131,28 @@ async function runRealTest() {
       name: 'Beta Real Corp Ltd',
       country: 'Ethiopia',
       currency: 'ETB',
+    },
+  });
+
+  const userA = await prisma.user.create({
+    data: {
+      id: 'real-test-user-a',
+      companyId: companyA.id,
+      email: 'usera@real-test-co-a.com',
+      password: 'password123',
+      firstName: 'Test',
+      lastName: 'UserA',
+    },
+  });
+
+  const userB = await prisma.user.create({
+    data: {
+      id: 'real-test-user-b',
+      companyId: companyB.id,
+      email: 'userb@real-test-co-b.com',
+      password: 'password123',
+      firstName: 'Test',
+      lastName: 'UserB',
     },
   });
 
@@ -315,7 +340,7 @@ async function runRealTest() {
       siteId: siteA.id,
       machineId: machineA.id,
       operatorId: operatorA.id,
-      requestedById: 'mock-user-id',
+      requestedById: userA.id,
       litersRequested: 100,
       status: 'Pending',
       priority: 'Normal',
@@ -337,7 +362,7 @@ async function runRealTest() {
   // --- Check 4f: Company B user cannot approve/reject Company A fuel requests ---
   console.log('\n✍️ Check 4f: Verifying cross-fuel request approval block...');
   try {
-    await fuelService.approveRequest(reqA.id, companyB.id, 'mock-user-id', {
+    await fuelService.approveRequest(reqA.id, companyB.id, userA.id, {
       litersApproved: 100,
       costPerLiter: 110.50,
     });
@@ -362,7 +387,7 @@ async function runRealTest() {
   // --- Check 4h: Company B user cannot create fuel request using Company A resources ---
   console.log('\n✍️ Check 4h: Verifying fuel request creation scoping...');
   try {
-    await fuelService.createRequest(companyB.id, 'mock-user-id', {
+    await fuelService.createRequest(companyB.id, userA.id, {
       projectId: projectA.id,
       siteId: siteA.id,
       machineId: machineB.id,
@@ -382,13 +407,13 @@ async function runRealTest() {
 
   // --- RULE 6: Inventory Tenant Isolation Verification ---
   console.log('\n📦 Check 6a: Verifying Inventory Items and Warehouses Tenant Scoping...');
-  const warehouseA = await inventoryService.createWarehouse(companyA.id, 'mock-user-id', {
+  const warehouseA = await inventoryService.createWarehouse(companyA.id, userA.id, {
     warehouseName: 'Alpha Central Warehouse',
     type: 'Main Warehouse',
     location: 'Bole, Addis Ababa',
   });
 
-  const itemA = await inventoryService.createItem(companyA.id, 'mock-user-id', {
+  const itemA = await inventoryService.createItem(companyA.id, userA.id, {
     itemName: 'Alpha Cement 50kg',
     category: 'Cement',
     unit: 'Bag',
@@ -419,7 +444,7 @@ async function runRealTest() {
   // Company B user cannot create stock movement using Company A item
   console.log('\n✍️ Check 6b: Verifying Stock Movement Cross-Company Block...');
   try {
-    await inventoryService.recordMovement(companyB.id, 'mock-user-id', {
+    await inventoryService.recordMovement(companyB.id, userA.id, {
       inventoryItemId: itemA.id,
       movementType: 'STOCK_OUT',
       quantity: 50,
@@ -436,7 +461,7 @@ async function runRealTest() {
   // Company B user cannot create warehouse under Company A project/site
   console.log('\n✍️ Check 6c: Verifying Site Store Project Scoping Block...');
   try {
-    await inventoryService.createWarehouse(companyB.id, 'mock-user-id', {
+    await inventoryService.createWarehouse(companyB.id, userA.id, {
       warehouseName: 'Illegal Beta Site Store',
       type: 'Site Store',
       projectId: projectA.id,
@@ -453,7 +478,7 @@ async function runRealTest() {
 
   // Material Request Isolation
   console.log('\n📋 Check 6d: Verifying Material Request Approval & Issuance Block...');
-  const reqMatA = await inventoryService.createRequest(companyA.id, 'mock-user-id', {
+  const reqMatA = await inventoryService.createRequest(companyA.id, userA.id, {
     projectId: projectA.id,
     siteId: siteA.id,
     inventoryItemId: itemA.id,
@@ -462,7 +487,7 @@ async function runRealTest() {
   });
 
   try {
-    await inventoryService.approveRequest(reqMatA.id, companyB.id, 'mock-user-id', {
+    await inventoryService.approveRequest(reqMatA.id, companyB.id, userA.id, {
       quantityApproved: 100,
     });
     throw new Error('❌ FAIL: Security Leak! Company B approved Company A material request.');
@@ -515,7 +540,7 @@ async function runRealTest() {
   // --- RULE 7: Company B user cannot view, submit, or approve Company A daily reports ---
   console.log('\n📝 Check 7: Verifying Daily Site Reports tenant isolation...');
 
-  const reportA = await reportsService.createReport(companyA.id, 'user-a', {
+  const reportA = await reportsService.createReport(companyA.id, userA.id, {
     projectId: projectA.id,
     siteId: siteA.id,
     reportDate: '2026-07-24',
@@ -531,7 +556,7 @@ async function runRealTest() {
   }
 
   try {
-    await reportsService.approveReport(reportA.id, companyB.id, 'user-b', 'Approved by B');
+    await reportsService.approveReport(reportA.id, companyB.id, userB.id, 'Approved by B');
     throw new Error('❌ FAIL: Security Leak! Company B user approved Company A daily report.');
   } catch (err: any) {
     if (err.message?.includes('not found')) {
@@ -549,7 +574,7 @@ async function runRealTest() {
   // --- RULE 8: Company B user cannot view, start, or complete Company A maintenance records ---
   console.log('\n🔧 Check 8: Verifying Maintenance Management tenant isolation...');
 
-  const maintA = await maintenanceService.create(companyA.id, 'user-a', {
+  const maintA = await maintenanceService.create(companyA.id, userA.id, {
     machineId: machineA.id,
     projectId: projectA.id,
     siteId: siteA.id,
@@ -567,7 +592,7 @@ async function runRealTest() {
   }
 
   try {
-    await maintenanceService.start(maintA.id, companyB.id, 'user-b', {});
+    await maintenanceService.start(maintA.id, companyB.id, userB.id, {});
     throw new Error('❌ FAIL: Security Leak! Company B user started Company A maintenance record.');
   } catch (err: any) {
     if (err.message?.includes('not found')) {
@@ -576,7 +601,7 @@ async function runRealTest() {
   }
 
   try {
-    await maintenanceService.create(companyB.id, 'user-b', {
+    await maintenanceService.create(companyB.id, userB.id, {
       machineId: machineA.id,
       maintenanceType: 'Oil Change',
       priority: 'Normal',
@@ -593,7 +618,7 @@ async function runRealTest() {
   // --- RULE 9: Company B user cannot view, create, or approve Company A expenses or project financial reports ---
   console.log('\n💰 Check 9: Verifying Finance Lite tenant isolation...');
 
-  const expA = await financeService.createExpense(companyA.id, 'user-a', {
+  const expA = await financeService.createExpense(companyA.id, userA.id, {
     projectId: projectA.id,
     siteId: siteA.id,
     expenseCategory: 'Fuel',
@@ -610,7 +635,7 @@ async function runRealTest() {
   }
 
   try {
-    await financeService.approveExpense(expA.id, companyB.id, 'user-b', { status: 'Approved' });
+    await financeService.approveExpense(expA.id, companyB.id, userB.id, { status: 'Approved' });
     throw new Error('❌ FAIL: Security Leak! Company B user approved Company A expense.');
   } catch (err: any) {
     if (err.message?.includes('not found')) {
@@ -619,7 +644,7 @@ async function runRealTest() {
   }
 
   try {
-    await financeService.createExpense(companyB.id, 'user-b', {
+    await financeService.createExpense(companyB.id, userB.id, {
       projectId: projectA.id,
       expenseCategory: 'Subcontractor',
       amount: 50000.0,

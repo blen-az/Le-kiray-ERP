@@ -16,6 +16,8 @@ import {
   Calendar,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/lib/auth';
+import RequirePermission from '@/components/auth/RequirePermission';
 
 const DEMO_USERS = [
   { name: 'Kidus Getachew', email: 'ceo@abcconstruction.com', role: 'CEO / Owner', color: 'bg-sky-100 text-sky-800' },
@@ -29,16 +31,25 @@ const DEMO_USERS = [
 
 const ROLES = [
   { name: 'CEO / Owner', permCount: 'All permissions', desc: 'Full read/write access to all modules' },
-  { name: 'Project Manager', permCount: '12 permissions', desc: 'Projects, HR, Reports, Finance view' },
-  { name: 'Fleet Manager', permCount: '9 permissions', desc: 'Machinery, Fuel, Maintenance' },
-  { name: 'Inventory Manager', permCount: '13 permissions', desc: 'Full inventory and stock control' },
-  { name: 'HR Manager', permCount: '11 permissions', desc: 'Employee records, Attendance, Leave' },
-  { name: 'Finance Officer', permCount: '8 permissions', desc: 'Expenses, Reports, Profitability' },
-  { name: 'Site Manager', permCount: '7 permissions', desc: 'Fuel requests, Attendance, Daily reports' },
+  { name: 'Project Manager', permCount: '18 permissions', desc: 'Projects, Sites, HR, Finance, Reports, Maintenance view' },
+  { name: 'Fleet Manager', permCount: '20 permissions', desc: 'Machinery, Fuel, Maintenance, Inventory view' },
+  { name: 'Inventory Manager', permCount: '18 permissions', desc: 'Full inventory and stock control, fuel/maintenance view' },
+  { name: 'HR Manager', permCount: '16 permissions', desc: 'Employee records, Attendance, Leave, Machinery/fuel view' },
+  { name: 'Finance Officer', permCount: '17 permissions', desc: 'Expenses, Reports, Profitability, cost analytics' },
+  { name: 'Site Manager', permCount: '17 permissions', desc: 'Fuel requests, Attendance, Daily reports, maintenance create' },
 ];
 
 export default function SettingsPage() {
+  const { user } = useAuth();
+
+  const displayName = user ? `${user.firstName} ${user.lastName}` : '—';
+  const displayEmail = user?.email ?? '—';
+  const displayRole = user?.roles?.[0] ?? '—';
+  const displayPermCount = user?.permissions?.length ?? 0;
+  const initials = user ? `${user.firstName[0]}${user.lastName[0]}` : 'U';
+
   return (
+    <RequirePermission permission="settings:view">
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Page Header */}
       <div>
@@ -97,14 +108,19 @@ export default function SettingsPage() {
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[#0284c7]/10 border border-[#0284c7]/20 text-[#0284c7] font-black text-lg">
-              K
+              {initials}
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-900">Kidus Getachew</p>
+              <p className="text-sm font-bold text-slate-900">{displayName}</p>
               <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                <Mail size={11} /> ceo@abcconstruction.com
+                <Mail size={11} /> {displayEmail}
               </p>
-              <span className="mt-1.5 inline-block text-[10px] font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded">CEO / Owner</span>
+              <span className="mt-1.5 inline-block text-[10px] font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded">{displayRole}</span>
+              {displayPermCount > 0 && (
+                <span className="ml-1.5 mt-1.5 inline-block text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded">
+                  {displayPermCount} permissions
+                </span>
+              )}
             </div>
           </div>
           <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs text-slate-500">
@@ -225,5 +241,6 @@ export default function SettingsPage() {
         </p>
       </div>
     </div>
+    </RequirePermission>
   );
 }

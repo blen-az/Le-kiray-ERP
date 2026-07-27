@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle2, XCircle, Clock, Calendar, AlertCircle } from '
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { LeaveStatusBadge } from '@/components/hr/LeaveStatusBadge';
+import { PermissionGate } from '@/components/auth/RequirePermission';
 
 interface LeaveDetail {
   id: string;
@@ -185,24 +186,30 @@ export default function LeaveRequestDetailPage() {
         </div>
 
         {leave.status === 'Pending' && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowRejectModal(true)}
-              disabled={actionLoading}
-              className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold transition-colors disabled:opacity-50"
-            >
-              <XCircle size={15} />
-              Reject Request
-            </button>
-            <button
-              onClick={handleApprove}
-              disabled={actionLoading}
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-md text-xs font-bold shadow-xs transition-colors disabled:opacity-50"
-            >
-              <CheckCircle2 size={15} />
-              Approve Leave
-            </button>
-          </div>
+          <PermissionGate anyOf={['leave:approve', 'leave:reject']}>
+            <div className="flex items-center gap-2">
+              <PermissionGate permission="leave:reject">
+                <button
+                  onClick={() => setShowRejectModal(true)}
+                  disabled={actionLoading}
+                  className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold transition-colors disabled:opacity-50"
+                >
+                  <XCircle size={15} />
+                  Reject Request
+                </button>
+              </PermissionGate>
+              <PermissionGate permission="leave:approve">
+                <button
+                  onClick={handleApprove}
+                  disabled={actionLoading}
+                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-md text-xs font-bold shadow-xs transition-colors disabled:opacity-50"
+                >
+                  <CheckCircle2 size={15} />
+                  Approve Leave
+                </button>
+              </PermissionGate>
+            </div>
+          </PermissionGate>
         )}
       </div>
 

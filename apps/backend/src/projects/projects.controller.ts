@@ -23,6 +23,13 @@ export class ProjectsController {
     return this.projectsService.findAll(companyId);
   }
 
+  @Get('users/managers')
+  @Permissions('projects:view')
+  @ApiOperation({ summary: 'List all company users eligible for assignment as project or site managers' })
+  findCompanyUsers(@CurrentUser('companyId') companyId: string) {
+    return this.projectsService.findCompanyUsers(companyId);
+  }
+
   @Get(':id')
   @Permissions('projects:view')
   @ApiOperation({ summary: 'Get details of a specific project' })
@@ -68,12 +75,5 @@ export class ProjectsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.projectsService.remove(id, user.companyId, user.id);
-  }
-
-  @Get('users/managers')
-  @Permissions('projects:view')
-  @ApiOperation({ summary: 'List all company users eligible for assignment as project or site managers' })
-  findCompanyUsers(@CurrentUser('companyId') companyId: string) {
-    return this.projectsService.findCompanyUsers(companyId);
   }
 }

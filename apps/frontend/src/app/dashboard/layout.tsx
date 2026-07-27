@@ -1,16 +1,41 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from '../../components/layout/sidebar';
-import { Search, Bell, Calendar, MapPin } from 'lucide-react';
+import { Search, Bell, Calendar, MapPin, Loader2 } from 'lucide-react';
 import { formatDate } from '../../lib/utils';
+import { useAuth } from '../../lib/auth';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
   const currentDate = new Date();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  // Show loading spinner while restoring session
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3 text-slate-400">
+          <Loader2 size={32} className="animate-spin text-sky-500" />
+          <p className="text-sm font-medium">Loading workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't flash the dashboard to unauthenticated users while redirecting
+  if (!isAuthenticated) return null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">

@@ -13,6 +13,7 @@ import { FuelStatusBadge, FuelPriorityBadge, FuelLogTable } from '@/components/u
 import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { PermissionGate } from '@/components/auth/RequirePermission';
 
 export default function FuelRequestDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -301,22 +302,28 @@ export default function FuelRequestDetailPage() {
         </div>
         <div className="flex gap-2">
           {canApprove && (
-            <button onClick={openApprove}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md transition-colors">
-              <CheckCircle2 size={13} /> Approve
-            </button>
+            <PermissionGate permission="fuel:approve">
+              <button onClick={openApprove}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md transition-colors">
+                <CheckCircle2 size={13} /> Approve
+              </button>
+            </PermissionGate>
           )}
           {canReject && (
-            <button onClick={() => { setRejectionReason(''); setActionError(null); setModalType('reject'); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-md transition-colors">
-              <XCircle size={13} /> Reject
-            </button>
+            <PermissionGate permission="fuel:reject">
+              <button onClick={() => { setRejectionReason(''); setActionError(null); setModalType('reject'); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-md transition-colors">
+                <XCircle size={13} /> Reject
+              </button>
+            </PermissionGate>
           )}
           {canIssue && (
-            <button onClick={() => { setLitersIssued(request.litersApproved - request.litersIssued); setWorkingHours(8); setReading(0); setModalNotes(''); setActionError(null); setModalType('issue'); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0284c7] hover:bg-[#0275b0] text-white text-xs font-semibold rounded-md transition-colors">
-              <FileSpreadsheet size={13} /> Issue Fuel
-            </button>
+            <PermissionGate permission="fuel:issue">
+              <button onClick={() => { setLitersIssued(request.litersApproved - request.litersIssued); setWorkingHours(8); setReading(0); setModalNotes(''); setActionError(null); setModalType('issue'); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0284c7] hover:bg-[#0275b0] text-white text-xs font-semibold rounded-md transition-colors">
+                <FileSpreadsheet size={13} /> Issue Fuel
+              </button>
+            </PermissionGate>
           )}
         </div>
       </div>

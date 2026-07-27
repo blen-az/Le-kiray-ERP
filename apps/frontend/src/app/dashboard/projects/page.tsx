@@ -22,6 +22,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { PermissionGate } from '@/components/auth/RequirePermission';
 
 interface Site {
   id: string;
@@ -206,13 +207,15 @@ export default function ProjectsPage() {
         title="Projects & Sites"
         description="Register and coordinate your company construction projects and physical sites."
         actions={
-          <Link
-            href="/dashboard/projects/new"
-            className="flex items-center gap-1.5 bg-[#0284c7] hover:bg-[#0275b0] text-white px-4 py-2 rounded-md text-xs font-semibold shadow-xs transition-colors"
-          >
-            <Plus size={16} />
-            New Project
-          </Link>
+          <PermissionGate permission="projects:create">
+            <Link
+              href="/dashboard/projects/new"
+              className="flex items-center gap-1.5 bg-[#0284c7] hover:bg-[#0275b0] text-white px-4 py-2 rounded-md text-xs font-semibold shadow-xs transition-colors"
+            >
+              <Plus size={16} />
+              New Project
+            </Link>
+          </PermissionGate>
         }
       />
 
@@ -381,20 +384,24 @@ export default function ProjectsPage() {
                         >
                           <Eye size={16} />
                         </Link>
-                        <Link
-                          href={`/dashboard/projects/${p.id}/edit`}
-                          title="Edit Project"
-                          className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
-                        >
-                          <Edit3 size={16} />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(p.id)}
-                          title="Delete Project"
-                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <PermissionGate permission="projects:update">
+                          <Link
+                            href={`/dashboard/projects/${p.id}/edit`}
+                            title="Edit Project"
+                            className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+                          >
+                            <Edit3 size={16} />
+                          </Link>
+                        </PermissionGate>
+                        <PermissionGate permission="projects:delete">
+                          <button
+                            onClick={() => handleDelete(p.id)}
+                            title="Delete Project"
+                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </PermissionGate>
                       </div>
                     </td>
                   </tr>

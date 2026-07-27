@@ -26,6 +26,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { MaintenanceStatusBadge } from '@/components/maintenance/MaintenanceStatusBadge';
 import { MaintenancePriorityBadge } from '@/components/maintenance/MaintenancePriorityBadge';
 import { MaintenanceTypeBadge } from '@/components/maintenance/MaintenanceTypeBadge';
+import { PermissionGate } from '@/components/auth/RequirePermission';
 import { formatCurrency } from '@/lib/utils';
 
 interface MaintenanceDetail {
@@ -303,56 +304,66 @@ export default function MaintenanceDetailPage() {
         {/* Actions Bar */}
         <div className="flex flex-wrap gap-2">
           {record.status !== 'Completed' && (
-            <Link
-              href={`/dashboard/maintenance/${record.id}/edit`}
-              className="flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-md text-xs font-semibold shadow-xs"
-            >
-              <Edit3 size={15} />
-              Edit
-            </Link>
+            <PermissionGate permission="maintenance:update">
+              <Link
+                href={`/dashboard/maintenance/${record.id}/edit`}
+                className="flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-md text-xs font-semibold shadow-xs"
+              >
+                <Edit3 size={15} />
+                Edit
+              </Link>
+            </PermissionGate>
           )}
 
           {(record.status === 'Reported' || record.status === 'Scheduled') && (
-            <button
-              onClick={() => setShowStartModal(true)}
-              disabled={actionLoading}
-              className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 rounded-md text-xs font-bold shadow-xs disabled:opacity-50"
-            >
-              <Play size={15} />
-              Start Work
-            </button>
+            <PermissionGate permission="maintenance:start">
+              <button
+                onClick={() => setShowStartModal(true)}
+                disabled={actionLoading}
+                className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 rounded-md text-xs font-bold shadow-xs disabled:opacity-50"
+              >
+                <Play size={15} />
+                Start Work
+              </button>
+            </PermissionGate>
           )}
 
           {record.status === 'In Progress' && (
-            <button
-              onClick={() => setShowCompleteModal(true)}
-              disabled={actionLoading}
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-md text-xs font-bold shadow-xs disabled:opacity-50"
-            >
-              <CheckCircle2 size={15} />
-              Complete Work
-            </button>
+            <PermissionGate permission="maintenance:complete">
+              <button
+                onClick={() => setShowCompleteModal(true)}
+                disabled={actionLoading}
+                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-md text-xs font-bold shadow-xs disabled:opacity-50"
+              >
+                <CheckCircle2 size={15} />
+                Complete Work
+              </button>
+            </PermissionGate>
           )}
 
           {record.status !== 'Completed' && record.status !== 'Cancelled' && (
-            <button
-              onClick={() => setShowCancelModal(true)}
-              disabled={actionLoading}
-              className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold disabled:opacity-50"
-            >
-              <XCircle size={15} />
-              Cancel
-            </button>
+            <PermissionGate permission="maintenance:cancel">
+              <button
+                onClick={() => setShowCancelModal(true)}
+                disabled={actionLoading}
+                className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold disabled:opacity-50"
+              >
+                <XCircle size={15} />
+                Cancel
+              </button>
+            </PermissionGate>
           )}
 
-          <button
-            onClick={handleDelete}
-            disabled={actionLoading}
-            className="p-2 text-rose-500 hover:bg-rose-50 rounded-md"
-            title="Delete Record"
-          >
-            <Trash2 size={16} />
-          </button>
+          <PermissionGate permission="maintenance:delete">
+            <button
+              onClick={handleDelete}
+              disabled={actionLoading}
+              className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-xs disabled:opacity-50"
+            >
+              <Trash2 size={15} />
+              Delete
+            </button>
+          </PermissionGate>
         </div>
       </div>
 

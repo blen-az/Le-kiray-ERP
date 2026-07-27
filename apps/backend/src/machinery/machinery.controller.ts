@@ -100,7 +100,7 @@ export class MachineryController {
 
   @Delete('assignments/:assignmentId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Permissions('machinery:delete')
+  @Permissions('machinery:return')
   @ApiOperation({ summary: 'Cancel/Delete a machine assignment' })
   @ApiResponse({ status: 204, description: 'Assignment deleted' })
   @ApiResponse({ status: 404, description: 'Assignment not found' })

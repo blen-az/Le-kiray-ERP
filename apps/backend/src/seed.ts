@@ -42,12 +42,41 @@ async function main() {
 
   // 3. Create Permissions
   const permissionActions = [
+    // Dashboard
+    { action: 'dashboard:view', description: 'View the main ERP dashboard' },
+    { action: 'settings:view', description: 'View company settings and user management' },
+
+    // Projects & Sites
     { action: 'projects:create', description: 'Create new construction projects' },
     { action: 'projects:view', description: 'View project details and list' },
+    { action: 'projects:update', description: 'Edit project details' },
+    { action: 'projects:delete', description: 'Delete projects' },
+    { action: 'sites:view', description: 'View construction site details' },
+    { action: 'sites:create', description: 'Create new construction sites' },
+    { action: 'sites:update', description: 'Edit site details' },
+    { action: 'sites:delete', description: 'Delete sites' },
+
+    // Machinery
+    { action: 'machinery:view', description: 'View fleet machinery list and details' },
     { action: 'machinery:create', description: 'Add new heavy machinery' },
+    { action: 'machinery:update', description: 'Edit machinery details' },
+    { action: 'machinery:delete', description: 'Delete machinery records' },
     { action: 'machinery:assign', description: 'Assign machinery to project sites' },
+    { action: 'machinery:return', description: 'Return/cancel machinery assignments' },
+    { action: 'machinery:history', description: 'View machinery event history and timeline' },
+
+    // Fuel
+    { action: 'fuel:view', description: 'View fuel requests and logs' },
     { action: 'fuel:request', description: 'Submit fuel replenishment requests' },
-    { action: 'fuel:approve', description: 'Approve or reject fuel requests' },
+    { action: 'fuel:approve', description: 'Approve fuel requests' },
+    { action: 'fuel:reject', description: 'Reject fuel requests' },
+    { action: 'fuel:issue', description: 'Issue fuel against approved requests' },
+    { action: 'fuel:update', description: 'Update fuel requests or logs' },
+    { action: 'fuel:log', description: 'Record manual fuel logs' },
+    { action: 'fuel:delete', description: 'Delete fuel requests or logs' },
+    { action: 'fuel:reports', description: 'View fuel consumption reports' },
+
+    // Inventory
     { action: 'inventory:view', description: 'View inventory directory, balances, and warehouses' },
     { action: 'inventory:create', description: 'Register inventory items and warehouses' },
     { action: 'inventory:update', description: 'Edit inventory item details and stores' },
@@ -61,11 +90,14 @@ async function main() {
     { action: 'inventory:reject', description: 'Reject material requests' },
     { action: 'inventory:issue', description: 'Issue approved material requests' },
     { action: 'inventory:reports', description: 'View inventory reports and analytics' },
+
+    // HR & Attendance
     { action: 'hr:view', description: 'View employees, rosters, and HR profiles' },
     { action: 'hr:create', description: 'Create employee records' },
     { action: 'hr:update', description: 'Update employee records' },
     { action: 'hr:delete', description: 'Delete employee records' },
     { action: 'hr:assign', description: 'Assign employees to project sites' },
+    { action: 'hr:reports', description: 'View HR & workforce analytics reports' },
     { action: 'attendance:view', description: 'View daily attendance registers' },
     { action: 'attendance:create', description: 'Record daily attendance and overtime' },
     { action: 'attendance:update', description: 'Update attendance records' },
@@ -74,7 +106,9 @@ async function main() {
     { action: 'leave:create', description: 'Submit leave requests' },
     { action: 'leave:approve', description: 'Approve employee leave requests' },
     { action: 'leave:reject', description: 'Reject employee leave requests' },
-    { action: 'hr:reports', description: 'View HR & workforce analytics reports' },
+    { action: 'leave:delete', description: 'Delete leave requests' },
+
+    // Daily Site Reports
     { action: 'reports:view', description: 'View daily site logs' },
     { action: 'reports:create', description: 'Create daily site reports' },
     { action: 'reports:update', description: 'Edit daily site reports' },
@@ -83,6 +117,8 @@ async function main() {
     { action: 'reports:approve', description: 'Approve daily site reports' },
     { action: 'reports:reject', description: 'Reject daily site reports' },
     { action: 'reports:export', description: 'Export daily site logs' },
+
+    // Maintenance
     { action: 'maintenance:view', description: 'View machinery maintenance records' },
     { action: 'maintenance:create', description: 'Create machinery maintenance logs' },
     { action: 'maintenance:update', description: 'Edit machinery maintenance logs' },
@@ -91,6 +127,8 @@ async function main() {
     { action: 'maintenance:complete', description: 'Complete machinery maintenance & issue parts' },
     { action: 'maintenance:cancel', description: 'Cancel machinery maintenance records' },
     { action: 'maintenance:reports', description: 'View machinery maintenance & downtime reports' },
+
+    // Finance
     { action: 'finance:view', description: 'View financial summary, expenses, & project costs' },
     { action: 'finance:create', description: 'Record manual operational expenses & revenues' },
     { action: 'finance:update', description: 'Edit manual expense records' },
@@ -140,7 +178,8 @@ async function main() {
   console.log(`🎭 Seeded ${rolesToCreate.length} workspace roles.`);
 
   // 5. Connect Permissions to Roles
-  // Map CEO to all permissions
+
+  // CEO / Owner — all permissions
   for (const act of permissionActions) {
     await prisma.rolePermission.create({
       data: {
@@ -149,11 +188,36 @@ async function main() {
       },
     });
   }
+
+  // Project Manager permissions
+  const pmPerms = [
+    'dashboard:view',
+    'projects:view', 'projects:create', 'projects:update',
+    'sites:view', 'sites:create', 'sites:update',
+    'machinery:view',
+    'fuel:view',
+    'inventory:view',
+    'hr:view', 'hr:reports',
+    'attendance:view',
+    'reports:view', 'reports:create', 'reports:update', 'reports:submit', 'reports:approve', 'reports:reject',
+    'maintenance:view',
+    'finance:view', 'finance:reports',
+  ];
+  for (const p of pmPerms) {
+    await prisma.rolePermission.create({
+      data: { roleId: roles['Project Manager'].id, permissionId: permissions[p].id },
+    });
+  }
+
   // Fleet Manager permissions
   const fleetPerms = [
-    'machinery:create', 'machinery:assign', 'fuel:request', 'fuel:approve',
-    'maintenance:view', 'maintenance:create', 'maintenance:update', 'maintenance:complete', 'maintenance:reports',
-    'reports:view',
+    'dashboard:view',
+    'projects:view', 'sites:view',
+    'machinery:view', 'machinery:create', 'machinery:update', 'machinery:assign', 'machinery:return', 'machinery:history',
+    'fuel:view', 'fuel:approve', 'fuel:reject', 'fuel:issue', 'fuel:reports',
+    'maintenance:view', 'maintenance:create', 'maintenance:update', 'maintenance:start', 'maintenance:complete', 'maintenance:cancel', 'maintenance:reports',
+    'inventory:view',
+    'hr:view',
   ];
   for (const p of fleetPerms) {
     await prisma.rolePermission.create({
@@ -161,22 +225,15 @@ async function main() {
     });
   }
 
-  // Site Manager permissions
-  const sitePerms = [
-    'fuel:request', 'attendance:view', 'attendance:create', 'attendance:update',
-    'reports:view', 'reports:create', 'reports:submit', 'inventory:request',
-  ];
-  for (const p of sitePerms) {
-    await prisma.rolePermission.create({
-      data: { roleId: roles['Site Manager'].id, permissionId: permissions[p].id },
-    });
-  }
-
   // Inventory Manager permissions
   const invPerms = [
-    'inventory:view', 'inventory:create', 'inventory:update', 'inventory:delete',
+    'dashboard:view',
+    'projects:view', 'sites:view',
+    'inventory:view', 'inventory:create', 'inventory:update',
     'inventory:stock_in', 'inventory:stock_out', 'inventory:transfer', 'inventory:adjust',
     'inventory:request', 'inventory:approve', 'inventory:reject', 'inventory:issue', 'inventory:reports',
+    'fuel:view',
+    'maintenance:view',
     'reports:view',
   ];
   for (const p of invPerms) {
@@ -187,10 +244,14 @@ async function main() {
 
   // HR Manager permissions
   const hrPerms = [
-    'hr:view', 'hr:create', 'hr:update',
-    'attendance:view', 'attendance:create', 'attendance:update', 'attendance:delete',
-    'leave:view', 'leave:create', 'leave:approve', 'leave:reject', 'hr:reports',
+    'dashboard:view',
+    'projects:view', 'sites:view',
+    'hr:view', 'hr:create', 'hr:update', 'hr:assign', 'hr:reports',
+    'attendance:view', 'attendance:create', 'attendance:update',
+    'leave:view', 'leave:create', 'leave:approve', 'leave:reject',
     'reports:view',
+    'machinery:view',
+    'fuel:view',
   ];
   for (const p of hrPerms) {
     await prisma.rolePermission.create({
@@ -198,28 +259,39 @@ async function main() {
     });
   }
 
-  // Project Manager permissions
-  const pmPerms = [
-    'projects:create', 'projects:view',
-    'reports:view', 'reports:create', 'reports:submit', 'reports:export',
-    'attendance:view', 'attendance:create',
-    'hr:view', 'finance:view', 'maintenance:view',
-  ];
-  for (const p of pmPerms) {
-    await prisma.rolePermission.create({
-      data: { roleId: roles['Project Manager'].id, permissionId: permissions[p].id },
-    });
-  }
-
   // Finance Officer permissions
   const financePerms = [
+    'dashboard:view',
+    'projects:view', 'sites:view',
+    'fuel:view', 'fuel:reports',
+    'inventory:view', 'inventory:reports',
+    'maintenance:view', 'maintenance:reports',
+    'hr:view', 'hr:reports',
+    'reports:view',
     'finance:view', 'finance:create', 'finance:update', 'finance:delete',
     'finance:approve', 'finance:reports', 'finance:profitability',
-    'reports:view', 'projects:view',
   ];
   for (const p of financePerms) {
     await prisma.rolePermission.create({
       data: { roleId: roles['Finance Officer'].id, permissionId: permissions[p].id },
+    });
+  }
+
+  // Site Manager permissions
+  const sitePerms = [
+    'dashboard:view',
+    'projects:view', 'sites:view',
+    'machinery:view',
+    'fuel:view', 'fuel:request',
+    'inventory:view', 'inventory:request',
+    'hr:view',
+    'attendance:view', 'attendance:create',
+    'reports:view', 'reports:create', 'reports:update', 'reports:submit',
+    'maintenance:view', 'maintenance:create',
+  ];
+  for (const p of sitePerms) {
+    await prisma.rolePermission.create({
+      data: { roleId: roles['Site Manager'].id, permissionId: permissions[p].id },
     });
   }
 

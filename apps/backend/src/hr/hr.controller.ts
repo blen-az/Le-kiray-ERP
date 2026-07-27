@@ -273,7 +273,7 @@ export class HrController {
   }
 
   @Delete('leave-requests/:id')
-  @Permissions('leave:create')
+  @Permissions('leave:delete')
   @ApiOperation({ summary: 'Soft delete leave request' })
   removeLeaveRequest(@CurrentUser() user: any, @Param('id') id: string) {
     return this.hrService.removeLeaveRequest(id, user.companyId);
