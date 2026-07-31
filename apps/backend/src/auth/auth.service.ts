@@ -1,14 +1,16 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
+import { SecurityLoggerService, SecurityEventType } from '../common/logger/security-logger.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private securityLogger: SecurityLoggerService,
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
@@ -32,13 +34,63 @@ export class AuthService {
     });
 
     if (!user || user.deletedAt) {
+      this.securityLogger.logSecurityEvent(SecurityEventType.LOGIN_FAILURE, {
+        email,
+        reason: 'User not found or deleted',
+      });
       throw new NotFoundException('User not found');
+    }
+
+    // Check account lockout status
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const remainingMinutes = Math.ceil((user.lockedUntil.getTime() - Date.now()) / (1000 * 60));
+      this.securityLogger.logSecurityEvent(SecurityEventType.ACCOUNT_LOCKED, {
+        userId: user.id,
+        email: user.email,
+        companyId: user.companyId,
+        reason: `Account locked for ${remainingMinutes} more minutes`,
+      });
+      throw new ForbiddenException(`Account locked due to repeated failed logins. Please try again in ${remainingMinutes} minutes.`);
     }
 
     const isMatch = await bcrypt.compare(pass, user.password);
     if (!isMatch) {
+      const newFailedCount = (user.failedLoginCount || 0) + 1;
+      let lockedUntil: Date | null = null;
+      const MAX_LOGIN_ATTEMPTS = parseInt(process.env.LOGIN_RATE_LIMIT_MAX || '5', 10);
+
+      if (newFailedCount >= MAX_LOGIN_ATTEMPTS) {
+        // Lock account for 15 minutes after max failed attempts
+        lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+      }
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginCount: newFailedCount,
+          lockedUntil,
+        },
+      });
+
+      this.securityLogger.logSecurityEvent(SecurityEventType.LOGIN_FAILURE, {
+        userId: user.id,
+        email: user.email,
+        companyId: user.companyId,
+        reason: `Invalid password. Attempt ${newFailedCount}/${MAX_LOGIN_ATTEMPTS}`,
+      });
+
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    // Successful authentication: Reset failed count & lock, update lastLoginAt
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        failedLoginCount: 0,
+        lockedUntil: null,
+        lastLoginAt: new Date(),
+      },
+    });
 
     // Extract flat list of role names and actions/permissions
     const roles = user.roles.map((ur) => ur.role.name);
@@ -53,6 +105,12 @@ export class AuthService {
     });
 
     const permissions = Array.from(permissionSet);
+
+    this.securityLogger.logSecurityEvent(SecurityEventType.LOGIN_SUCCESS, {
+      userId: user.id,
+      email: user.email,
+      companyId: user.companyId,
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = user;
@@ -73,12 +131,12 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: '15m',
+      expiresIn: (process.env.ACCESS_TOKEN_EXPIRES_IN || '15m') as any,
       secret: process.env.JWT_SECRET || 'super_secret_jwt_key_change_me_in_production',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: '7d',
+      expiresIn: (process.env.REFRESH_TOKEN_EXPIRES_IN || '7d') as any,
       secret: process.env.JWT_REFRESH_SECRET || 'super_secret_refresh_jwt_key_change_me',
     });
 
@@ -86,8 +144,8 @@ export class AuthService {
   }
 
   async updateRefreshToken(userId: string, refreshToken: string) {
-    const saltRounds = 10;
-    const hash = await bcrypt.hash(refreshToken, saltRounds);
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+    const hash = await bcrypt.hash(refreshToken, rounds);
     await this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: hash },
@@ -126,6 +184,10 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: null },
+    });
+
+    this.securityLogger.logSecurityEvent(SecurityEventType.LOGOUT, {
+      userId,
     });
   }
 
@@ -178,6 +240,11 @@ export class AuthService {
 
       const tokens = await this.generateTokens(user.id, user.companyId, user.email, roles, permissions);
       await this.updateRefreshToken(user.id, tokens.refreshToken);
+
+      this.securityLogger.logSecurityEvent(SecurityEventType.REFRESH_TOKEN_ROTATED, {
+        userId: user.id,
+        companyId: user.companyId,
+      });
 
       return {
         accessToken: tokens.accessToken,

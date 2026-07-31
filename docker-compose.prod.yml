@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: lekiray_prod_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required}
+      POSTGRES_DB: ${POSTGRES_DB:-lekiray_erp}
+    ports:
+      - "127.0.0.1:5432:5432" # Bound to loopback interface only (Not exposed to public internet)
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - lekiray_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: lekiray_prod_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-lekiray_erp}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET environment variable is required}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET environment variable is required}
+      FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL environment variable is required}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS environment variable is required}
+    ports:
+      - "127.0.0.1:4000:4000" # Bound to loopback interface only (Nginx proxy target)
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:4000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - lekiray_network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    container_name: lekiray_prod_frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL environment variable is required}
+      NEXT_PUBLIC_USE_MOCK_DATA: "false"
+    ports:
+      - "127.0.0.1:3000:3000" # Bound to loopback interface only (Nginx proxy target)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - lekiray_network
+
+volumes:
+  pgdata_prod:
+
+networks:
+  lekiray_network:
+    driver: bridge

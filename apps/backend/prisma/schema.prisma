@@ -57,6 +57,11 @@ model User {
   createdById String?
   updatedById String?
   refreshToken String?
+  lastLoginAt        DateTime?
+  failedLoginCount   Int       @default(0)
+  lockedUntil        DateTime?
+  passwordChangedAt  DateTime?
+  refreshTokenVersion Int      @default(1)
 
   // Relations
   roles                      UserRole[]
@@ -87,6 +92,7 @@ model User {
   recordedRevenues           ProjectRevenue[]     @relation("RevenueRecordedBy")
   auditLogs                  AuditLog[]
 
+  @@index([companyId, deletedAt])
   @@map("users")
 }
 
@@ -201,6 +207,9 @@ model Project {
   expenses           Expense[]
   projectRevenues    ProjectRevenue[]
 
+  @@index([companyId, deletedAt])
+  @@index([companyId, status])
+  @@index([companyId, createdAt])
   @@map("projects")
 }
 
@@ -239,6 +248,9 @@ model Site {
   maintenanceRecords MaintenanceRecord[]
   expenses           Expense[]
 
+  @@index([companyId, deletedAt])
+  @@index([companyId, projectId])
+  @@index([companyId, status])
   @@map("sites")
 }
 

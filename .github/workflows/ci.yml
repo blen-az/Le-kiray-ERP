@@ -1,0 +1,79 @@
+name: Le'Kiray ERP CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, staging ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  audit-and-build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_test_password
+          POSTGRES_DB: lekiray_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Workspace Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate --workspace=apps/backend
+
+      - name: Backend Build & Type Check
+        run: npm run build --workspace=apps/backend
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres_test_password@localhost:5432/lekiray_test"
+          JWT_SECRET: "ci_pipeline_jwt_secret_minimum_32_characters_key"
+          JWT_REFRESH_SECRET: "ci_pipeline_refresh_secret_minimum_32_characters_key"
+
+      - name: Frontend Build & Type Check
+        run: npm run build --workspace=apps/frontend
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:4000/api"
+          NEXT_PUBLIC_USE_MOCK_DATA: "false"
+
+      - name: Run RBAC Production Audit
+        run: npm run audit:rbac --workspace=apps/backend
+
+      - name: Run RBAC Permission Tests
+        run: npm run test:rbac --workspace=apps/backend
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres_test_password@localhost:5432/lekiray_test"
+          JWT_SECRET: "ci_pipeline_jwt_secret_minimum_32_characters_key"
+          JWT_REFRESH_SECRET: "ci_pipeline_refresh_secret_minimum_32_characters_key"
+
+      - name: Run Database Migrations for Tenant Testing
+        run: |
+          cd apps/backend
+          npx prisma migrate dev --name init_ci
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres_test_password@localhost:5432/lekiray_test"
+
+      - name: Run Multi-Tenant Data Isolation Tests
+        run: npm run test:tenant-real --workspace=apps/backend
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres_test_password@localhost:5432/lekiray_test"
+          JWT_SECRET: "ci_pipeline_jwt_secret_minimum_32_characters_key"
+          JWT_REFRESH_SECRET: "ci_pipeline_refresh_secret_minimum_32_characters_key"
