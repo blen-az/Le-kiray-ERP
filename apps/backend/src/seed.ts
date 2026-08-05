@@ -178,14 +178,13 @@ async function main() {
   console.log(`🎭 Seeded ${rolesToCreate.length} workspace roles.`);
 
   // 5. Connect Permissions to Roles
+  const rolePermissionsData: { roleId: string; permissionId: string }[] = [];
 
   // CEO / Owner — all permissions
   for (const act of permissionActions) {
-    await prisma.rolePermission.create({
-      data: {
-        roleId: roles['CEO / Owner'].id,
-        permissionId: permissions[act.action].id,
-      },
+    rolePermissionsData.push({
+      roleId: roles['CEO / Owner'].id,
+      permissionId: permissions[act.action].id,
     });
   }
 
@@ -204,9 +203,7 @@ async function main() {
     'finance:view', 'finance:reports',
   ];
   for (const p of pmPerms) {
-    await prisma.rolePermission.create({
-      data: { roleId: roles['Project Manager'].id, permissionId: permissions[p].id },
-    });
+    rolePermissionsData.push({ roleId: roles['Project Manager'].id, permissionId: permissions[p].id });
   }
 
   // Fleet Manager permissions
@@ -220,9 +217,7 @@ async function main() {
     'hr:view',
   ];
   for (const p of fleetPerms) {
-    await prisma.rolePermission.create({
-      data: { roleId: roles['Fleet Manager'].id, permissionId: permissions[p].id },
-    });
+    rolePermissionsData.push({ roleId: roles['Fleet Manager'].id, permissionId: permissions[p].id });
   }
 
   // Inventory Manager permissions
@@ -237,9 +232,7 @@ async function main() {
     'reports:view',
   ];
   for (const p of invPerms) {
-    await prisma.rolePermission.create({
-      data: { roleId: roles['Inventory Manager'].id, permissionId: permissions[p].id },
-    });
+    rolePermissionsData.push({ roleId: roles['Inventory Manager'].id, permissionId: permissions[p].id });
   }
 
   // HR Manager permissions
@@ -254,9 +247,7 @@ async function main() {
     'fuel:view',
   ];
   for (const p of hrPerms) {
-    await prisma.rolePermission.create({
-      data: { roleId: roles['HR Manager'].id, permissionId: permissions[p].id },
-    });
+    rolePermissionsData.push({ roleId: roles['HR Manager'].id, permissionId: permissions[p].id });
   }
 
   // Finance Officer permissions
@@ -272,9 +263,7 @@ async function main() {
     'finance:approve', 'finance:reports', 'finance:profitability',
   ];
   for (const p of financePerms) {
-    await prisma.rolePermission.create({
-      data: { roleId: roles['Finance Officer'].id, permissionId: permissions[p].id },
-    });
+    rolePermissionsData.push({ roleId: roles['Finance Officer'].id, permissionId: permissions[p].id });
   }
 
   // Site Manager permissions
@@ -290,10 +279,10 @@ async function main() {
     'maintenance:view', 'maintenance:create',
   ];
   for (const p of sitePerms) {
-    await prisma.rolePermission.create({
-      data: { roleId: roles['Site Manager'].id, permissionId: permissions[p].id },
-    });
+    rolePermissionsData.push({ roleId: roles['Site Manager'].id, permissionId: permissions[p].id });
   }
+
+  await prisma.rolePermission.createMany({ data: rolePermissionsData });
 
   console.log('🔗 Role-Permission mappings established.');
 
