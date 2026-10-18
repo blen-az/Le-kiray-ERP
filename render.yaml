@@ -4,7 +4,7 @@ services:
   - type: web
     name: lekiray-api
     runtime: node
-    plan: starter # free plan sleeps after 15 min idle (~1 min cold start) — not suitable for production
+    plan: free # sleeps after 15 min idle (~50s wake-up); switch to starter (~$7/mo) to stay always on
     region: frankfurt # closest Render region to Ethiopia
     branch: main
     buildCommand: npm ci --include=dev && npm run db:generate --workspace=apps/backend && npm run build --workspace=apps/backend

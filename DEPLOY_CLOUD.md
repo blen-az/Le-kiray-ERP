@@ -60,8 +60,31 @@ In Render, set `CORS_ORIGINS` and `FRONTEND_URL` to the exact Vercel production 
 Merging to `main` redeploys both automatically. Migrations and permission sync run on backend
 start, so new modules work immediately; users must sign out and back in to pick up new permissions.
 
-## Costs (approximate)
+## Costs
 
-- Vercel Hobby: free (commercial use requires Pro, $20/mo)
-- Render Starter: ~$7/mo (free plan sleeps and is not suitable for real users)
-- Neon Free: 0.5 GB storage; upgrade when data grows. Enable Neon's point-in-time restore on a paid plan for real backups.
+Everything here runs on free plans:
+
+| Service | Free plan | Limitation |
+|---|---|---|
+| Vercel Hobby | Free | Vercel's terms restrict Hobby to non-commercial use; Pro is $20/mo. Netlify Free allows commercial use. |
+| Render Free | Free (750 instance-hours/month, enough for one always-on service) | Sleeps after 15 min with no requests; the first request after that takes ~50 s |
+| Neon Free | 0.5 GB storage | Compute pauses after 5 idle minutes (resumes in under 1 s). No point-in-time backups. |
+
+### Keeping the free backend awake (optional)
+
+Create a free monitor at **cron-job.org** or **UptimeRobot** that requests
+`https://lekiray-api.onrender.com/api` every **10 minutes**.
+
+- Ping `/api`, **not** `/api/health`. The health check queries the database, which would stop
+  Neon from pausing and use up its free compute hours.
+- One service pinged all month uses about 744 of Render's 750 free hours, so do this for one service only.
+
+### Backups on the free plan
+
+Neon Free has no point-in-time restore. Take a manual backup weekly:
+
+```bash
+pg_dump "<DIRECT_URL>" -Fc -f lekiray-$(date +%F).dump
+```
+
+When the business depends on it, upgrade Render to Starter (no sleep) and Neon to a paid plan (backups).
