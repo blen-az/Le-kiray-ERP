@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TendersService } from './tenders.service';
+import { TenderBoardService } from './tender-board.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
@@ -20,7 +21,10 @@ import {
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiBearerAuth()
 export class TendersController {
-  constructor(private readonly tendersService: TendersService) {}
+  constructor(
+    private readonly tendersService: TendersService,
+    private readonly tenderBoardService: TenderBoardService,
+  ) {}
 
   @Get()
   @Permissions('tenders:view')
@@ -51,6 +55,27 @@ export class TendersController {
   @ApiOperation({ summary: 'List company users who can be assigned as bid managers' })
   listBidManagers(@CurrentUser('companyId') companyId: string) {
     return this.tendersService.listBidManagers(companyId);
+  }
+
+  // Shared Le’Kiray Tender Board — declared before ':id' so 'board' is not read as a tender id
+  @Get('board')
+  @Permissions('tenders:view')
+  @ApiOperation({ summary: 'Open tender notices published by Le’Kiray, with your company tracking status' })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'category', required: false })
+  listBoard(
+    @CurrentUser('companyId') companyId: string,
+    @Query('search') search?: string,
+    @Query('category') category?: string,
+  ) {
+    return this.tenderBoardService.listForCompany(companyId, { search, category });
+  }
+
+  @Post('board/:noticeId/track')
+  @Permissions('tenders:create')
+  @ApiOperation({ summary: 'Copy a Tender Board notice into your company’s private pipeline' })
+  track(@Param('noticeId') noticeId: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.tenderBoardService.track(noticeId, user.companyId, user.id);
   }
 
   @Post()

@@ -13,10 +13,12 @@ import {
   Edit3,
   Loader2,
   Activity,
+  Megaphone,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { CredentialsCard, Modal } from '@/components/users/UsersPanel';
+import TenderNoticesPanel from '@/components/platform/TenderNoticesPanel';
 import { useAuth } from '@/lib/auth';
 import { apiRequest } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -90,7 +92,7 @@ const EMPTY_FORM = {
   ownerEmail: '',
 };
 
-export default function PlatformAdminPage() {
+function CompaniesView() {
   const { user } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -224,15 +226,7 @@ export default function PlatformAdminPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <Globe2 size={22} className="text-[#0284c7]" />
-            Platform Admin
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Onboard contractor companies onto Le&apos;Kiray ERP and manage their access. Each company manages its own users and roles.
-          </p>
-        </div>
+        <p className="text-xs text-slate-500">Each company manages its own users and roles once onboarded.</p>
         <button
           onClick={() => {
             setForm(EMPTY_FORM);
@@ -514,6 +508,47 @@ export default function PlatformAdminPage() {
           />
         </Modal>
       )}
+    </div>
+  );
+}
+
+type Tab = 'companies' | 'board';
+
+export default function PlatformAdminPage() {
+  const [tab, setTab] = useState<Tab>('companies');
+
+  return (
+    <div className="space-y-6 animate-fadeIn">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+          <Globe2 size={22} className="text-[#0284c7]" />
+          Platform Admin
+        </h2>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Le&apos;Kiray operator tools: onboard contractor companies and publish tenders to every company.
+        </p>
+      </div>
+
+      <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5">
+        {([
+          { id: 'companies', label: 'Companies', icon: Building2 },
+          { id: 'board', label: 'Tender Board', icon: Megaphone },
+        ] as const).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              'flex items-center gap-1.5 px-4 py-1.5 rounded text-xs font-semibold transition-colors',
+              tab === t.id ? 'bg-[#0f172a] text-white' : 'text-slate-500 hover:text-slate-900',
+            )}
+          >
+            <t.icon size={13} />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'companies' ? <CompaniesView /> : <TenderNoticesPanel />}
     </div>
   );
 }

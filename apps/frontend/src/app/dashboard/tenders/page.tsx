@@ -16,6 +16,7 @@ import {
   User,
   RefreshCw,
   Inbox,
+  Megaphone,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
@@ -206,6 +207,13 @@ export default function TendersPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href="/dashboard/tenders/board"
+            className="flex items-center gap-1.5 border border-sky-200 bg-sky-50 hover:bg-sky-100 text-[#0284c7] px-3 py-1.5 rounded-md text-xs font-bold shadow-xs"
+          >
+            <Megaphone size={14} />
+            Tender Board
+          </Link>
           <button
             onClick={load}
             className="flex items-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-md text-xs font-semibold shadow-xs"

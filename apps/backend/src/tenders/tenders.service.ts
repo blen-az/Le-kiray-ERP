@@ -161,6 +161,7 @@ export class TendersService {
       include: {
         bidManager: { select: { id: true, firstName: true, lastName: true, email: true } },
         convertedProject: { select: { id: true, projectName: true, status: true } },
+        notice: { select: { id: true, status: true, sourceUrl: true, updatedAt: true } },
         checklist: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] },
       },
     });
@@ -196,7 +197,7 @@ export class TendersService {
     };
   }
 
-  async create(companyId: string, userId: string, dto: CreateTenderDto) {
+  async create(companyId: string, userId: string, dto: CreateTenderDto, options?: { noticeId?: string }) {
     if (dto.bidManagerId) {
       await this.assertUserInCompany(dto.bidManagerId, companyId);
     }
@@ -230,6 +231,7 @@ export class TendersService {
         submissionDeadline: new Date(dto.submissionDeadline),
         openingDate: dto.openingDate ? new Date(dto.openingDate) : null,
         bidManagerId: dto.bidManagerId ?? null,
+        noticeId: options?.noticeId ?? null,
         createdById: userId,
         checklist: {
           create: checklistLabels.map((label, index) => ({ companyId, label, sortOrder: index })),

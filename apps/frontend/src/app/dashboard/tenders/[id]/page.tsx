@@ -24,6 +24,8 @@ import {
   Loader2,
   ShieldCheck,
   FileText,
+  Megaphone,
+  ExternalLink,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
@@ -81,6 +83,7 @@ interface TenderDetail {
   bidManagerId?: string | null;
   bidManager?: { id: string; firstName: string; lastName: string; email: string } | null;
   convertedProject?: { id: string; projectName: string; status: string } | null;
+  notice?: { id: string; status: string; sourceUrl: string | null } | null;
   checklist: ChecklistItem[];
   activity: ActivityEntry[];
 }
@@ -242,6 +245,20 @@ export default function TenderDetailPage() {
               <span className="text-[11px] font-mono text-slate-400">{tender.tenderNumber}</span>
               <TenderStatusBadge status={tender.status} />
               <DeadlineChip deadline={tender.submissionDeadline} status={tender.status} />
+              {tender.notice && (
+                <Link
+                  href="/dashboard/tenders/board"
+                  title="Tracked from the Le’Kiray Tender Board. Date changes Le’Kiray makes are copied here while you prepare."
+                  className="inline-flex items-center gap-1 rounded-md bg-sky-50 border border-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-[#0284c7]"
+                >
+                  <Megaphone size={10} /> Tender Board{tender.notice.status === 'Cancelled' ? ' · cancelled by client' : ''}
+                </Link>
+              )}
+              {tender.notice?.sourceUrl && (
+                <a href={tender.notice.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-[#0284c7] hover:underline">
+                  Original notice <ExternalLink size={10} />
+                </a>
+              )}
             </div>
             <h2 className="text-xl font-bold tracking-tight text-slate-900 mt-1">{tender.title}</h2>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500">

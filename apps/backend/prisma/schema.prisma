@@ -987,6 +987,8 @@ model Tender {
   outcomeNotes          String?   @db.Text // Loss reason / no-bid reason / award notes
   bidManagerId          String?
   bidManager            User?     @relation("TenderBidManager", fields: [bidManagerId], references: [id], onDelete: SetNull)
+  noticeId              String?   // Set when tracked from the shared Le’Kiray Tender Board
+  notice                TenderNotice? @relation(fields: [noticeId], references: [id], onDelete: SetNull)
   convertedProjectId    String?   @unique
   convertedProject      Project?  @relation("TenderConvertedProject", fields: [convertedProjectId], references: [id], onDelete: SetNull)
   createdById           String?
@@ -1000,6 +1002,7 @@ model Tender {
 
   @@index([companyId, deletedAt])
   @@index([companyId, status])
+  @@unique([companyId, noticeId])
   @@index([companyId, submissionDeadline])
   @@map("tenders")
 }
@@ -1019,4 +1022,42 @@ model TenderChecklistItem {
 
   @@index([companyId, tenderId])
   @@map("tender_checklist_items")
+}
+
+/// A tender opportunity published by Le’Kiray on the shared Tender Board.
+/// Platform-level (no companyId): every company can read it; only platform admins write it.
+/// Companies "track" a notice, which copies it into their own private Tender.
+model TenderNotice {
+  id                    String    @id @default(uuid())
+  tenderNumber          String
+  title                 String
+  procuringEntity       String
+  category              String
+  procurementMethod     String    @default("Open National Bidding")
+  source                String?
+  sourceUrl             String?   // Link to the original notice (e-GP, newspaper scan)
+  requiredGrade         String?
+  location              String?
+  regionOrCity          String?
+  description           String?   @db.Text
+  estimatedValue        Float?
+  documentFee           Float?
+  bidSecurityAmount     Float?
+  bidSecurityType       String?
+  publishedDate         DateTime?
+  siteVisitDate         DateTime?
+  clarificationDeadline DateTime?
+  submissionDeadline    DateTime
+  openingDate           DateTime?
+  status                String    @default("Open") // "Open", "Cancelled"
+  createdById           String?
+  updatedById           String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  trackedBy             Tender[]
+
+  @@index([deletedAt, status, submissionDeadline])
+  @@map("tender_notices")
 }
