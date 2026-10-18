@@ -51,7 +51,9 @@ async function refreshAccessToken(): Promise<string | null> {
 
 export async function apiFetch(path: string, options: FetchOptions = {}): Promise<Response> {
   const { token, ...fetchOptions } = options;
-  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+  // Pages pass `${apiUrl}/...` (already prefixed); newer code passes bare paths like '/tenders'.
+  // API_BASE may be relative ('/api') when the frontend proxies to the backend (see next.config.ts).
+  const url = path.startsWith('http') || path.startsWith(`${API_BASE}/`) ? path : `${API_BASE}${path}`;
   const isOwnApi = url.startsWith(API_BASE);
   const isAuthEndpoint = url.startsWith(`${API_BASE}/auth/`);
 

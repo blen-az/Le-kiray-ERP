@@ -38,6 +38,13 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
+  // Behind reverse proxies (Vercel rewrite → Render), use X-Forwarded-For so rate limits
+  // apply per real client instead of per proxy IP. Value = number of proxy hops to trust.
+  const trustProxy = process.env.TRUST_PROXY;
+  if (trustProxy) {
+    app.getHttpAdapter().getInstance().set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy === 'true');
+  }
+
   // Enable Graceful Shutdown Hooks
   app.enableShutdownHooks();
 
