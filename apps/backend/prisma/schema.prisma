@@ -13,6 +13,12 @@ model Company {
   name      String
   country   String    @default("Ethiopia")
   currency  String    @default("ETB")
+  status       String    @default("Active") // "Active", "Suspended" — suspended companies cannot sign in
+  suspendedAt  DateTime?
+  tinNumber    String?   // Ethiopian Taxpayer Identification Number
+  licenseGrade String?   // Contractor grade, e.g. "GC-1", "BC-3"
+  city         String?
+  phone        String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -65,6 +71,7 @@ model User {
   passwordChangedAt  DateTime?
   refreshTokenVersion Int      @default(1)
   isActive           Boolean   @default(true)  // Deactivated users cannot sign in
+  isPlatformAdmin    Boolean   @default(false) // Le’Kiray operator: can onboard and suspend companies
   mustChangePassword Boolean   @default(false) // Set when an admin issues a temporary password
 
   // Relations

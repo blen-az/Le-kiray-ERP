@@ -7,6 +7,7 @@ export class AuthenticatedUser {
   roles!: string[];
   permissions!: string[];
   mustChangePassword?: boolean;
+  isPlatformAdmin?: boolean;
 }
 
 export const CurrentUser = createParamDecorator(

@@ -87,9 +87,21 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 }
 
 /** Shown once after creating a user or resetting a password */
-function CredentialsCard({ name, email, password, onDone }: { name: string; email: string; password: string; onDone: () => void }) {
+export function CredentialsCard({
+  name,
+  email,
+  password,
+  onDone,
+  companyName,
+}: {
+  name: string;
+  email: string;
+  password: string;
+  onDone: () => void;
+  companyName?: string;
+}) {
   const loginUrl = typeof window !== 'undefined' ? `${window.location.origin}/login` : '/login';
-  const instructions = `Hi ${name},\n\nYour Le'Kiray ERP account is ready.\n\nSign in at: ${loginUrl}\nEmail: ${email}\nTemporary password: ${password}\n\nYou will be asked to choose your own password when you first sign in.`;
+  const instructions = `Hi ${name},\n\nYour Le'Kiray ERP account${companyName ? ` for ${companyName}` : ''} is ready.\n\nSign in at: ${loginUrl}\nEmail: ${email}\nTemporary password: ${password}\n\nYou will be asked to choose your own password when you first sign in.`;
 
   return (
     <div className="space-y-4">
