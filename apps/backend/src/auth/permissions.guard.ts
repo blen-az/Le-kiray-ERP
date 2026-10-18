@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from './permissions.decorator';
 
@@ -11,6 +11,12 @@ export class PermissionsGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    // Users holding an admin-issued temporary password can only reach /auth endpoints
+    const request = context.switchToHttp().getRequest();
+    if (request.user?.mustChangePassword) {
+      throw new ForbiddenException('PASSWORD_CHANGE_REQUIRED');
+    }
+
     if (!requiredPermissions || requiredPermissions.length === 0) {
       return true;
     }

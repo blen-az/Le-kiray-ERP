@@ -2,6 +2,7 @@ import { Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus, Res, Req,
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser, AuthenticatedUser } from './current-user.decorator';
 import { Request, Response } from 'express';
@@ -89,6 +90,33 @@ export class AuthController {
     });
 
     return { message: 'Successfully logged out' };
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change own password (required after an admin issues a temporary password)' })
+  @ApiResponse({ status: 200, description: 'Password changed; returns a fresh session' })
+  async changePassword(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) response: any,
+  ) {
+    const result = await this.authService.changePassword(userId, dto);
+
+    response.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
+    });
+
+    return {
+      accessToken: result.accessToken,
+      user: result.user,
+    };
   }
 
   @Get('me')

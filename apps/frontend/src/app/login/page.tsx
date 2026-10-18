@@ -6,7 +6,9 @@ import { Building2, Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 
 export default function LoginPage() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
+  // Demo quick-fill accounts only exist in the demo seed; never advertise them in production
+  const showDemoAccounts = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -18,9 +20,9 @@ export default function LoginPage() {
   // If already logged in, redirect
   React.useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/dashboard');
+      router.replace(user?.mustChangePassword ? '/change-password' : '/dashboard');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, user, router]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -28,8 +30,8 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
-      router.replace('/dashboard');
+      const signedIn = await login(email, password);
+      router.replace(signedIn.mustChangePassword ? '/change-password' : '/dashboard');
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -76,7 +78,7 @@ export default function LoginPage() {
           <div className="mb-6">
             <h2 className="text-lg font-bold text-white">Sign in to your workspace</h2>
             <p className="text-sm text-slate-400 mt-0.5">
-              ABC Construction PLC — Ethiopia
+              Use the email and password from your administrator
             </p>
           </div>
 
@@ -101,7 +103,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@abcconstruction.com"
+                placeholder="you@company.com"
                 className="w-full px-3.5 py-2.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500/50 transition-colors"
               />
             </div>
@@ -152,6 +154,7 @@ export default function LoginPage() {
         </div>
 
         {/* Demo Users Quick-fill */}
+        {showDemoAccounts && (
         <div className="mt-4 bg-white/5 border border-white/10 rounded-2xl p-4">
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">
             Demo Accounts — Password: <span className="font-mono text-slate-400">Password123!</span>
@@ -172,6 +175,7 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
+        )}
 
         <p className="text-center text-[10px] text-slate-600 mt-6">
           Le'Kiray ERP — v1.0.0-MVP · Ethiopian Construction ERP

@@ -14,6 +14,7 @@ import { MaintenanceModule } from './maintenance/maintenance.module';
 import { FinanceModule } from './finance/finance.module';
 import { HealthModule } from './health/health.module';
 import { TendersModule } from './tenders/tenders.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { TendersModule } from './tenders/tenders.module';
     FinanceModule,
     HealthModule,
     TendersModule,
+    UsersModule,
   ],
   providers: [
     {

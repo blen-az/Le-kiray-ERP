@@ -15,6 +15,7 @@ import {
   FileText,
   DollarSign,
   Settings,
+  UserCog,
   LogOut,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -98,6 +99,12 @@ const ALL_MENU_ITEMS: NavItem[] = [
     requiredPermission: 'finance:view',
   },
   {
+    name: 'Users & Access',
+    href: '/dashboard/users',
+    icon: UserCog,
+    requiredPermission: 'users:view',
+  },
+  {
     name: 'Settings',
     href: '/dashboard/settings',
     icon: Settings,
@@ -168,7 +175,7 @@ export default function Sidebar({ className }: SidebarProps) {
               Active Company
             </span>
             <span className="text-xs font-semibold text-white">
-              {user?.companyName ?? 'ABC Construction PLC'}
+              {user?.companyName ?? ''}
             </span>
           </div>
           <div className="flex items-center justify-center bg-[#0284c7]/20 border border-[#0284c7]/30 text-xs px-2 py-0.5 rounded text-sky-300 font-medium">

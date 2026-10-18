@@ -14,6 +14,8 @@ export interface AuthUser {
   companyName?: string;
   roles: string[];
   permissions: string[];
+  /** Set when an admin issued a temporary password; the app blocks everything until it is changed */
+  mustChangePassword: boolean;
 }
 
 interface AuthContextValue {
@@ -23,8 +25,10 @@ interface AuthContextValue {
   isAuthenticated: boolean;
 
   // Auth actions
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
+  /** Installs a session returned by the API (e.g. after changing password) */
+  applySession: (accessToken: string, apiUser: any) => AuthUser;
 
   // Permission helpers
   hasPermission: (permission: string) => boolean;
@@ -117,6 +121,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     restore();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const applySession = useCallback(
+    (token: string, apiUser: any) => {
+      const mapped = mapUser(apiUser);
+      storeToken(token);
+      setUser(mapped);
+      return mapped;
+    },
+    [storeToken],
+  );
+
   const login = useCallback(async (email: string, password: string) => {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
@@ -131,9 +145,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const data = await res.json();
-    storeToken(data.accessToken);
-    setUser(mapUser(data.user));
-  }, [storeToken]);
+    return applySession(data.accessToken, data.user);
+  }, [applySession]);
 
   const logout = useCallback(async () => {
     try {
@@ -195,6 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         login,
         logout,
+        applySession,
         hasPermission,
         hasAnyPermission,
         hasAllPermissions,
@@ -227,6 +241,7 @@ function mapUser(apiUser: any): AuthUser {
     companyName: apiUser.company?.name,
     roles: apiUser.roles ?? [],
     permissions: apiUser.permissions ?? [],
+    mustChangePassword: apiUser.mustChangePassword === true,
   };
 }
 
@@ -255,5 +270,6 @@ function mapProfileToUser(token: string, profile: any): AuthUser {
     companyName: profile.company?.name,
     roles,
     permissions,
+    mustChangePassword: profile.mustChangePassword === true,
   };
 }

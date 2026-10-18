@@ -105,4 +105,128 @@ export const PERMISSION_REGISTRY: { action: string; description: string }[] = [
   { action: 'tenders:update', description: 'Edit tenders, bid checklists, and pipeline stage' },
   { action: 'tenders:delete', description: 'Delete tender records' },
   { action: 'tenders:award', description: 'Record tender win/loss and convert awarded tenders to projects' },
+
+  // Users & Access
+  { action: 'users:view', description: 'View workspace users and roles' },
+  { action: 'users:manage', description: 'Add users, assign roles, reset passwords, and deactivate accounts' },
+  { action: 'roles:manage', description: 'Create, edit, and delete roles and their permissions' },
+];
+
+/** Role with every permission. Its permission set is managed by the seeder and cannot be edited. */
+export const OWNER_ROLE = 'CEO / Owner';
+/** Platform-level role that bypasses permission checks. Never assignable from the app. */
+export const SUPER_ADMIN_ROLE = 'Super Admin';
+/** Roles whose definition cannot be edited or deleted from the app */
+export const LOCKED_ROLES = [OWNER_ROLE, SUPER_ADMIN_ROLE];
+
+/**
+ * Starter roles created by seed-production.ts when missing. Existing roles are never
+ * overwritten, so admins can customise them in the Roles page afterwards.
+ */
+export const DEFAULT_ROLES: { name: string; description: string; permissions: string[] }[] = [
+  {
+    name: 'Project Manager',
+    description: 'Manages projects, sites, daily reports, and bid preparation',
+    permissions: [
+      'dashboard:view',
+      'projects:view', 'projects:create', 'projects:update',
+      'sites:view', 'sites:create', 'sites:update',
+      'machinery:view',
+      'fuel:view',
+      'inventory:view',
+      'hr:view', 'hr:reports',
+      'attendance:view',
+      'reports:view', 'reports:create', 'reports:update', 'reports:submit', 'reports:approve', 'reports:reject',
+      'maintenance:view',
+      'finance:view', 'finance:reports',
+      'tenders:view', 'tenders:create', 'tenders:update',
+    ],
+  },
+  {
+    name: 'Site Manager',
+    description: 'Runs a site: daily reports, attendance, fuel and material requests',
+    permissions: [
+      'dashboard:view',
+      'projects:view', 'sites:view',
+      'machinery:view',
+      'fuel:view', 'fuel:request',
+      'inventory:view', 'inventory:request',
+      'hr:view',
+      'attendance:view', 'attendance:create',
+      'reports:view', 'reports:create', 'reports:update', 'reports:submit',
+      'maintenance:view', 'maintenance:create',
+    ],
+  },
+  {
+    name: 'Fleet Manager',
+    description: 'Manages machinery, operator assignments, fuel, and maintenance',
+    permissions: [
+      'dashboard:view',
+      'projects:view', 'sites:view',
+      'machinery:view', 'machinery:create', 'machinery:update', 'machinery:assign', 'machinery:return', 'machinery:history',
+      'fuel:view', 'fuel:approve', 'fuel:reject', 'fuel:issue', 'fuel:log', 'fuel:reports',
+      'maintenance:view', 'maintenance:create', 'maintenance:update', 'maintenance:start', 'maintenance:complete', 'maintenance:cancel', 'maintenance:reports',
+      'inventory:view',
+      'hr:view',
+    ],
+  },
+  {
+    name: 'Inventory Manager',
+    description: 'Manages warehouses, materials, and stock movements',
+    permissions: [
+      'dashboard:view',
+      'projects:view', 'sites:view',
+      'inventory:view', 'inventory:create', 'inventory:update',
+      'inventory:stock_in', 'inventory:stock_out', 'inventory:transfer', 'inventory:adjust',
+      'inventory:request', 'inventory:approve', 'inventory:reject', 'inventory:issue', 'inventory:reports',
+      'fuel:view',
+      'maintenance:view',
+      'reports:view',
+    ],
+  },
+  {
+    name: 'HR Manager',
+    description: 'Manages employees, assignments, attendance, and leave',
+    permissions: [
+      'dashboard:view',
+      'projects:view', 'sites:view',
+      'hr:view', 'hr:create', 'hr:update', 'hr:assign', 'hr:reports',
+      'attendance:view', 'attendance:create', 'attendance:update',
+      'leave:view', 'leave:create', 'leave:approve', 'leave:reject',
+      'reports:view',
+      'machinery:view',
+      'fuel:view',
+    ],
+  },
+  {
+    name: 'Finance Officer',
+    description: 'Records and approves expenses, revenue, and cost reports',
+    permissions: [
+      'dashboard:view',
+      'projects:view', 'sites:view',
+      'fuel:view', 'fuel:reports',
+      'inventory:view', 'inventory:reports',
+      'maintenance:view', 'maintenance:reports',
+      'hr:view', 'hr:reports',
+      'reports:view',
+      'finance:view', 'finance:create', 'finance:update', 'finance:delete',
+      'finance:approve', 'finance:reports', 'finance:profitability',
+      'tenders:view',
+    ],
+  },
+  {
+    name: 'Viewer',
+    description: 'Read-only access to dashboards and records',
+    permissions: [
+      'dashboard:view',
+      'projects:view', 'sites:view',
+      'machinery:view',
+      'fuel:view',
+      'inventory:view',
+      'hr:view', 'attendance:view',
+      'reports:view',
+      'maintenance:view',
+      'tenders:view',
+    ],
+  },
 ];

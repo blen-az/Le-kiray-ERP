@@ -64,6 +64,8 @@ model User {
   lockedUntil        DateTime?
   passwordChangedAt  DateTime?
   refreshTokenVersion Int      @default(1)
+  isActive           Boolean   @default(true)  // Deactivated users cannot sign in
+  mustChangePassword Boolean   @default(false) // Set when an admin issues a temporary password
 
   // Relations
   roles                      UserRole[]
