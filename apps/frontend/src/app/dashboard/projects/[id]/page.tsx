@@ -29,6 +29,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface Site {
   id: string;
@@ -126,7 +127,7 @@ export default function ProjectDetailPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/projects/${projectId}`);
+        const res = await apiFetch(`${apiUrl}/projects/${projectId}`);
         if (!res.ok) throw new Error('Project not found or API endpoint error');
         const data = await res.json();
         setProject(data);
@@ -175,7 +176,7 @@ export default function ProjectDetailPage() {
       }
       
       try {
-        const res = await fetch(`${apiUrl}/machinery`);
+        const res = await apiFetch(`${apiUrl}/machinery`);
         if (res.ok) {
           const data = await res.json();
           const filtered = data.filter((m: any) => m.currentProjectId === projectId);
@@ -202,7 +203,7 @@ export default function ProjectDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/sites/${siteId}`, {
+      const res = await apiFetch(`${apiUrl}/sites/${siteId}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete site');

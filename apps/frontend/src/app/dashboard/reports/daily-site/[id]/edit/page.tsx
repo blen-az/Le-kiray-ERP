@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 export default function EditDailyReportPage() {
   const params = useParams();
@@ -53,7 +54,7 @@ export default function EditDailyReportPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/reports/daily-site/${id}`);
+        const res = await apiFetch(`${apiUrl}/reports/daily-site/${id}`);
         if (!res.ok) throw new Error('Daily report not found');
         const r = await res.json();
 
@@ -110,7 +111,7 @@ export default function EditDailyReportPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/reports/daily-site/${id}`, {
+      const res = await apiFetch(`${apiUrl}/reports/daily-site/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

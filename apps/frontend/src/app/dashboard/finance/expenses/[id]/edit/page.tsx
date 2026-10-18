@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 interface FormData {
   expenseDate: string;
@@ -66,10 +67,10 @@ export default function EditExpensePage() {
 
       try {
         const [expRes, prRes, sRes, mRes] = await Promise.all([
-          fetch(`${apiUrl}/finance/expenses/${id}`),
-          fetch(`${apiUrl}/projects?status=Active&limit=100`),
-          fetch(`${apiUrl}/projects/sites?limit=100`),
-          fetch(`${apiUrl}/machinery?limit=100`),
+          apiFetch(`${apiUrl}/finance/expenses/${id}`),
+          apiFetch(`${apiUrl}/projects?status=Active&limit=100`),
+          apiFetch(`${apiUrl}/projects/sites?limit=100`),
+          apiFetch(`${apiUrl}/machinery?limit=100`),
         ]);
 
         if (!expRes.ok) throw new Error('Expense not found');
@@ -132,7 +133,7 @@ export default function EditExpensePage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/finance/expenses/${id}`, {
+      const res = await apiFetch(`${apiUrl}/finance/expenses/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

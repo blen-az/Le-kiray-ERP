@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { formatCurrency } from '@/lib/utils';
 import { StockMovementTypeBadge } from '@/components/inventory/StockMovementTypeBadge';
+import { apiFetch } from '@/lib/api';
 
 interface StockMovement {
   id: string;
@@ -109,7 +110,7 @@ export default function StockMovementsPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/inventory/movements`);
+        const res = await apiFetch(`${apiUrl}/inventory/movements`);
         if (res.ok) {
           const data = await res.json();
           setMovements(data);

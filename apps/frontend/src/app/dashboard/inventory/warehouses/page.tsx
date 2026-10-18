@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { LoadingState } from '@/components/ui/loading-state';
 import { formatCurrency } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { apiFetch } from '@/lib/api';
 
 interface WarehouseItem {
   id: string;
@@ -47,7 +48,7 @@ export default function WarehousesListPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/inventory/warehouses`);
+        const res = await apiFetch(`${apiUrl}/inventory/warehouses`);
         if (res.ok) {
           const data = await res.json();
           setWarehouses(data);
@@ -68,7 +69,7 @@ export default function WarehousesListPage() {
     if (!confirm('Are you sure you want to soft delete this storehouse record?')) return;
     try {
       if (!useMockData) {
-        await fetch(`${apiUrl}/inventory/warehouses/${id}`, { method: 'DELETE' });
+        await apiFetch(`${apiUrl}/inventory/warehouses/${id}`, { method: 'DELETE' });
       }
       setWarehouses(warehouses.filter((w) => w.id !== id));
     } catch (err: any) {

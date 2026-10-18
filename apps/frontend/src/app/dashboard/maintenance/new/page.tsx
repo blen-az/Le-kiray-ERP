@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save, Wrench } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 interface Machine {
   id: string;
@@ -90,9 +91,9 @@ function CreateMaintenanceForm() {
 
       try {
         const [macRes, projRes, empRes] = await Promise.all([
-          fetch(`${apiUrl}/machinery`),
-          fetch(`${apiUrl}/projects`),
-          fetch(`${apiUrl}/hr/employees`),
+          apiFetch(`${apiUrl}/machinery`),
+          apiFetch(`${apiUrl}/projects`),
+          apiFetch(`${apiUrl}/hr/employees`),
         ]);
 
         if (macRes.ok) setMachines(await macRes.json());
@@ -177,7 +178,7 @@ function CreateMaintenanceForm() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/maintenance`, {
+      const res = await apiFetch(`${apiUrl}/maintenance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

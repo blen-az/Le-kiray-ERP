@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface InventoryItem {
   id: string;
@@ -71,8 +72,8 @@ export default function CreateInventoryRequestPage() {
 
       try {
         const [projRes, itemsRes] = await Promise.all([
-          fetch(`${apiUrl}/projects`),
-          fetch(`${apiUrl}/inventory/items`),
+          apiFetch(`${apiUrl}/projects`),
+          apiFetch(`${apiUrl}/inventory/items`),
         ]);
 
         if (projRes.ok) setProjects(await projRes.json());
@@ -125,7 +126,7 @@ export default function CreateInventoryRequestPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/inventory/requests`, {
+      const res = await apiFetch(`${apiUrl}/inventory/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

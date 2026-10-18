@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save, CalendarCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 interface Employee {
   id: string;
@@ -82,8 +83,8 @@ function RecordAttendanceForm() {
 
       try {
         const [empRes, projRes] = await Promise.all([
-          fetch(`${apiUrl}/hr/employees`),
-          fetch(`${apiUrl}/projects`),
+          apiFetch(`${apiUrl}/hr/employees`),
+          apiFetch(`${apiUrl}/projects`),
         ]);
 
         if (empRes.ok) {
@@ -153,7 +154,7 @@ function RecordAttendanceForm() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/hr/attendance`, {
+      const res = await apiFetch(`${apiUrl}/hr/attendance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

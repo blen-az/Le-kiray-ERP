@@ -1,13 +1,21 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { PERMISSION_REGISTRY } from './auth/permission-registry';
+import { DEFAULT_TENDER_CHECKLIST } from './tenders/dto/create-tender.dto';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_SEED !== 'true') {
+    // This script wipes every table before inserting demo data.
+    throw new Error('Refusing to run the demo seed (it deletes all data) with NODE_ENV=production. Use seed-production instead.');
+  }
+
   console.log('🌱 Starting database seeding...');
 
   // 1. Clean existing data (safely in order of dependencies)
   await prisma.auditLog.deleteMany({});
+  await prisma.tender.deleteMany({});
   await prisma.maintenanceRecord.deleteMany({});
   await prisma.dailyReport.deleteMany({});
   await prisma.attendance.deleteMany({});
@@ -41,102 +49,7 @@ async function main() {
   console.log(`🏢 Created company: ${company.name} (${company.id})`);
 
   // 3. Create Permissions
-  const permissionActions = [
-    // Dashboard
-    { action: 'dashboard:view', description: 'View the main ERP dashboard' },
-    { action: 'settings:view', description: 'View company settings and user management' },
-
-    // Projects & Sites
-    { action: 'projects:create', description: 'Create new construction projects' },
-    { action: 'projects:view', description: 'View project details and list' },
-    { action: 'projects:update', description: 'Edit project details' },
-    { action: 'projects:delete', description: 'Delete projects' },
-    { action: 'sites:view', description: 'View construction site details' },
-    { action: 'sites:create', description: 'Create new construction sites' },
-    { action: 'sites:update', description: 'Edit site details' },
-    { action: 'sites:delete', description: 'Delete sites' },
-
-    // Machinery
-    { action: 'machinery:view', description: 'View fleet machinery list and details' },
-    { action: 'machinery:create', description: 'Add new heavy machinery' },
-    { action: 'machinery:update', description: 'Edit machinery details' },
-    { action: 'machinery:delete', description: 'Delete machinery records' },
-    { action: 'machinery:assign', description: 'Assign machinery to project sites' },
-    { action: 'machinery:return', description: 'Return/cancel machinery assignments' },
-    { action: 'machinery:history', description: 'View machinery event history and timeline' },
-
-    // Fuel
-    { action: 'fuel:view', description: 'View fuel requests and logs' },
-    { action: 'fuel:request', description: 'Submit fuel replenishment requests' },
-    { action: 'fuel:approve', description: 'Approve fuel requests' },
-    { action: 'fuel:reject', description: 'Reject fuel requests' },
-    { action: 'fuel:issue', description: 'Issue fuel against approved requests' },
-    { action: 'fuel:update', description: 'Update fuel requests or logs' },
-    { action: 'fuel:log', description: 'Record manual fuel logs' },
-    { action: 'fuel:delete', description: 'Delete fuel requests or logs' },
-    { action: 'fuel:reports', description: 'View fuel consumption reports' },
-
-    // Inventory
-    { action: 'inventory:view', description: 'View inventory directory, balances, and warehouses' },
-    { action: 'inventory:create', description: 'Register inventory items and warehouses' },
-    { action: 'inventory:update', description: 'Edit inventory item details and stores' },
-    { action: 'inventory:delete', description: 'Delete inventory items or warehouses' },
-    { action: 'inventory:stock_in', description: 'Record warehouse item check-ins' },
-    { action: 'inventory:stock_out', description: 'Record material dispatch to site' },
-    { action: 'inventory:transfer', description: 'Transfer materials between warehouses/site stores' },
-    { action: 'inventory:adjust', description: 'Adjust inventory stock balances' },
-    { action: 'inventory:request', description: 'Submit material requests' },
-    { action: 'inventory:approve', description: 'Approve material requests' },
-    { action: 'inventory:reject', description: 'Reject material requests' },
-    { action: 'inventory:issue', description: 'Issue approved material requests' },
-    { action: 'inventory:reports', description: 'View inventory reports and analytics' },
-
-    // HR & Attendance
-    { action: 'hr:view', description: 'View employees, rosters, and HR profiles' },
-    { action: 'hr:create', description: 'Create employee records' },
-    { action: 'hr:update', description: 'Update employee records' },
-    { action: 'hr:delete', description: 'Delete employee records' },
-    { action: 'hr:assign', description: 'Assign employees to project sites' },
-    { action: 'hr:reports', description: 'View HR & workforce analytics reports' },
-    { action: 'attendance:view', description: 'View daily attendance registers' },
-    { action: 'attendance:create', description: 'Record daily attendance and overtime' },
-    { action: 'attendance:update', description: 'Update attendance records' },
-    { action: 'attendance:delete', description: 'Delete attendance records' },
-    { action: 'leave:view', description: 'View employee leave requests' },
-    { action: 'leave:create', description: 'Submit leave requests' },
-    { action: 'leave:approve', description: 'Approve employee leave requests' },
-    { action: 'leave:reject', description: 'Reject employee leave requests' },
-    { action: 'leave:delete', description: 'Delete leave requests' },
-
-    // Daily Site Reports
-    { action: 'reports:view', description: 'View daily site logs' },
-    { action: 'reports:create', description: 'Create daily site reports' },
-    { action: 'reports:update', description: 'Edit daily site reports' },
-    { action: 'reports:delete', description: 'Delete daily site reports' },
-    { action: 'reports:submit', description: 'Submit daily site reports' },
-    { action: 'reports:approve', description: 'Approve daily site reports' },
-    { action: 'reports:reject', description: 'Reject daily site reports' },
-    { action: 'reports:export', description: 'Export daily site logs' },
-
-    // Maintenance
-    { action: 'maintenance:view', description: 'View machinery maintenance records' },
-    { action: 'maintenance:create', description: 'Create machinery maintenance logs' },
-    { action: 'maintenance:update', description: 'Edit machinery maintenance logs' },
-    { action: 'maintenance:delete', description: 'Delete machinery maintenance records' },
-    { action: 'maintenance:start', description: 'Start machinery maintenance repair work' },
-    { action: 'maintenance:complete', description: 'Complete machinery maintenance & issue parts' },
-    { action: 'maintenance:cancel', description: 'Cancel machinery maintenance records' },
-    { action: 'maintenance:reports', description: 'View machinery maintenance & downtime reports' },
-
-    // Finance
-    { action: 'finance:view', description: 'View financial summary, expenses, & project costs' },
-    { action: 'finance:create', description: 'Record manual operational expenses & revenues' },
-    { action: 'finance:update', description: 'Edit manual expense records' },
-    { action: 'finance:delete', description: 'Delete manual expense records' },
-    { action: 'finance:approve', description: 'Approve or reject manual operational expenses' },
-    { action: 'finance:reports', description: 'View financial & cost analytics reports' },
-    { action: 'finance:profitability', description: 'View project profitability & gross margin estimates' },
-  ];
+  const permissionActions = PERMISSION_REGISTRY;
 
   const permissions: Record<string, any> = {};
   for (const perm of permissionActions) {
@@ -201,6 +114,7 @@ async function main() {
     'reports:view', 'reports:create', 'reports:update', 'reports:submit', 'reports:approve', 'reports:reject',
     'maintenance:view',
     'finance:view', 'finance:reports',
+    'tenders:view', 'tenders:update',
   ];
   for (const p of pmPerms) {
     rolePermissionsData.push({ roleId: roles['Project Manager'].id, permissionId: permissions[p].id });
@@ -261,6 +175,7 @@ async function main() {
     'reports:view',
     'finance:view', 'finance:create', 'finance:update', 'finance:delete',
     'finance:approve', 'finance:reports', 'finance:profitability',
+    'tenders:view',
   ];
   for (const p of financePerms) {
     rolePermissionsData.push({ roleId: roles['Finance Officer'].id, permissionId: permissions[p].id });
@@ -1535,6 +1450,152 @@ async function main() {
     },
   });
   console.log('📋 Seeded security audit logs.');
+
+  // 18. Seed Tender Pipeline
+  const days = (n: number) => new Date(Date.now() + n * 24 * 60 * 60 * 1000);
+  const tenderChecklist = (doneCount: number) =>
+    DEFAULT_TENDER_CHECKLIST.map((label, index) => ({
+      companyId: company.id,
+      label,
+      sortOrder: index,
+      isDone: index < doneCount,
+      completedAt: index < doneCount ? days(-2) : null,
+    }));
+
+  const tenderSeeds = [
+    {
+      tenderNumber: 'ERA/NCB/W-014/2026',
+      title: 'Asphalt Upgrading of Modjo – Ziway Link Road (32 km)',
+      procuringEntity: 'Ethiopian Roads Administration',
+      category: 'Road Construction',
+      source: 'e-GP Portal',
+      requiredGrade: 'GC-1',
+      location: 'Modjo – Ziway corridor',
+      regionOrCity: 'Oromia',
+      status: 'Preparing',
+      winProbability: 55,
+      estimatedValue: 185000000,
+      bidAmount: 176400000,
+      bidSecurityAmount: 1850000,
+      bidSecurityType: 'Bank Guarantee',
+      documentFee: 500,
+      submissionDeadline: days(1.5),
+      openingDate: days(1.55),
+      siteVisitDate: days(-6),
+      done: 9,
+    },
+    {
+      tenderNumber: 'AAHDB/OCB/02/2026',
+      title: 'Earthworks & Site Grading for Koye Feche Condominium Block C',
+      procuringEntity: 'Addis Ababa Housing Development Bureau',
+      category: 'Earthworks',
+      source: 'Newspaper',
+      requiredGrade: 'GC-3',
+      location: 'Koye Feche',
+      regionOrCity: 'Addis Ababa',
+      status: 'Identified',
+      winProbability: 40,
+      estimatedValue: 38500000,
+      bidSecurityAmount: 400000,
+      bidSecurityType: 'CPO',
+      documentFee: 300,
+      submissionDeadline: days(12),
+      done: 2,
+    },
+    {
+      tenderNumber: 'OIB/RFQ/117/2026',
+      title: 'Rental of 4 Excavators & 6 Dump Trucks for Irrigation Canal Works',
+      procuringEntity: 'Oromia Irrigation Development Authority',
+      category: 'Machinery Rental',
+      source: 'Le’Kiray Marketplace',
+      regionOrCity: 'Oromia',
+      procurementMethod: 'Request for Quotation',
+      status: 'Submitted',
+      winProbability: 70,
+      estimatedValue: 14200000,
+      bidAmount: 13650000,
+      bidSecurityAmount: 140000,
+      bidSecurityType: 'CPO',
+      submissionDeadline: days(-3),
+      submittedAt: days(-3.2),
+      done: 12,
+    },
+    {
+      tenderNumber: 'DDWSA/NCB/W-05/2026',
+      title: 'Construction of 5,000 m³ Reservoir and Transmission Line',
+      procuringEntity: 'Dire Dawa Water & Sewerage Authority',
+      category: 'Water & Irrigation',
+      source: 'Direct Invitation',
+      requiredGrade: 'WWC-2',
+      regionOrCity: 'Dire Dawa',
+      status: 'Under Evaluation',
+      winProbability: 45,
+      estimatedValue: 96000000,
+      bidAmount: 94800000,
+      bidSecurityAmount: 960000,
+      bidSecurityType: 'Bank Guarantee',
+      submissionDeadline: days(-14),
+      submittedAt: days(-14.1),
+      done: 12,
+    },
+    {
+      tenderNumber: 'BDCA/NCB/B-09/2026',
+      title: 'G+4 Administrative Building for Bahir Dar City Administration',
+      procuringEntity: 'Bahir Dar City Administration',
+      category: 'Building Construction',
+      source: 'e-GP Portal',
+      requiredGrade: 'BC-2',
+      regionOrCity: 'Amhara',
+      status: 'Lost',
+      winProbability: 0,
+      estimatedValue: 72000000,
+      bidAmount: 69900000,
+      awardedTo: 'Yotek Construction PLC',
+      awardedAmount: 67350000,
+      outcomeNotes: 'Lost on price by 3.8%. Winner already mobilised on an adjacent site.',
+      bidSecurityAmount: 720000,
+      bidSecurityType: 'CPO',
+      bidSecurityReturned: false,
+      submissionDeadline: days(-40),
+      submittedAt: days(-40.1),
+      decidedAt: days(-18),
+      done: 12,
+    },
+    {
+      tenderNumber: 'HCA/RFQ/33/2026',
+      title: 'Access Road Gravel Surfacing — Hawassa Industrial Park Phase II',
+      procuringEntity: 'Hawassa City Administration',
+      category: 'Road Construction',
+      source: 'Direct Invitation',
+      regionOrCity: 'Sidama',
+      status: 'Won',
+      winProbability: 100,
+      estimatedValue: 21500000,
+      bidAmount: 20750000,
+      awardedAmount: 20750000,
+      outcomeNotes: 'Lowest evaluated bidder. Contract signing scheduled.',
+      bidSecurityAmount: 215000,
+      bidSecurityType: 'CPO',
+      bidSecurityReturned: true,
+      submissionDeadline: days(-30),
+      submittedAt: days(-30.2),
+      decidedAt: days(-6),
+      done: 12,
+    },
+  ];
+
+  for (const { done, ...t } of tenderSeeds) {
+    await prisma.tender.create({
+      data: {
+        ...t,
+        companyId: company.id,
+        bidManagerId: users['Project Manager'].id,
+        createdById: users['CEO / Owner'].id,
+        checklist: { create: tenderChecklist(done) },
+      },
+    });
+  }
+  console.log(`🏷️  Seeded ${tenderSeeds.length} tenders across the bid pipeline.`);
 
   console.log('🎉 Seeding successfully completed!');
 }

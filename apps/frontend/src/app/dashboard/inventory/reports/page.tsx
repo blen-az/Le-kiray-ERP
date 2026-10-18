@@ -20,6 +20,7 @@ import {
   Legend,
 } from 'recharts';
 import { InventoryStatusBadge } from '@/components/inventory/InventoryStatusBadge';
+import { apiFetch } from '@/lib/api';
 
 const COLORS = ['#0284c7', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'];
 
@@ -78,9 +79,9 @@ export default function InventoryReportsPage() {
 
       try {
         const [catRes, projRes, lowRes] = await Promise.all([
-          fetch(`${apiUrl}/inventory/reports/by-item`),
-          fetch(`${apiUrl}/inventory/reports/by-project`),
-          fetch(`${apiUrl}/inventory/reports/low-stock`),
+          apiFetch(`${apiUrl}/inventory/reports/by-item`),
+          apiFetch(`${apiUrl}/inventory/reports/by-project`),
+          apiFetch(`${apiUrl}/inventory/reports/low-stock`),
         ]);
 
         if (catRes.ok) {

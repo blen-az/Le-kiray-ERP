@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { DailyReportStatusBadge } from '@/components/reports/DailyReportStatusBadge';
+import { apiFetch } from '@/lib/api';
 
 interface SiteComplianceItem {
   siteId: string;
@@ -99,7 +100,7 @@ export default function TodaysSiteReportsPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/reports/daily-site/today`);
+        const res = await apiFetch(`${apiUrl}/reports/daily-site/today`);
         if (res.ok) {
           const resData = await res.json();
           setData(resData);

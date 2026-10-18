@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Droplet, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 interface Option { id: string; label: string; }
 
@@ -54,8 +55,8 @@ export default function NewFuelRequestPage() {
       }
       try {
         const [projRes, machRes] = await Promise.all([
-          fetch(`${apiUrl}/projects`),
-          fetch(`${apiUrl}/machinery`),
+          apiFetch(`${apiUrl}/projects`),
+          apiFetch(`${apiUrl}/machinery`),
         ]);
         if (projRes.ok) {
           const data = await projRes.json();
@@ -87,7 +88,7 @@ export default function NewFuelRequestPage() {
       setSiteId('');
       return;
     }
-    fetch(`${apiUrl}/projects/${projectId}/sites`)
+    apiFetch(`${apiUrl}/projects/${projectId}/sites`)
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         setSites(data.map((s: any) => ({ id: s.id, label: s.siteName })));
@@ -111,7 +112,7 @@ export default function NewFuelRequestPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/fuel/requests`, {
+      const res = await apiFetch(`${apiUrl}/fuel/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

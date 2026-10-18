@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { LoadingState } from '@/components/ui/loading-state';
 import { LeaveStatusBadge } from '@/components/hr/LeaveStatusBadge';
 import { PermissionGate } from '@/components/auth/RequirePermission';
+import { apiFetch } from '@/lib/api';
 
 interface LeaveDetail {
   id: string;
@@ -74,7 +75,7 @@ export default function LeaveRequestDetailPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/hr/leave-requests/${id}`);
+        const res = await apiFetch(`${apiUrl}/hr/leave-requests/${id}`);
         if (!res.ok) throw new Error('Leave request record not found');
         const data = await res.json();
         setLeave(data);
@@ -100,7 +101,7 @@ export default function LeaveRequestDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/hr/leave-requests/${id}/approve`, {
+      const res = await apiFetch(`${apiUrl}/hr/leave-requests/${id}/approve`, {
         method: 'POST',
       });
 
@@ -132,7 +133,7 @@ export default function LeaveRequestDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/hr/leave-requests/${id}/reject`, {
+      const res = await apiFetch(`${apiUrl}/hr/leave-requests/${id}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rejectionReason }),

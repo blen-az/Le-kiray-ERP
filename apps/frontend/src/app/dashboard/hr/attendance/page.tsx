@@ -6,6 +6,7 @@ import { CalendarCheck, Plus, Search, Filter, ArrowLeft, Clock, UserCheck } from
 import { Card, CardContent } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { AttendanceStatusBadge } from '@/components/hr/AttendanceStatusBadge';
+import { apiFetch } from '@/lib/api';
 
 interface AttendanceRecord {
   id: string;
@@ -96,7 +97,7 @@ export default function DailyAttendanceLogsPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/hr/attendance`);
+        const res = await apiFetch(`${apiUrl}/hr/attendance`);
         if (res.ok) {
           const data = await res.json();
           setAttendance(data);

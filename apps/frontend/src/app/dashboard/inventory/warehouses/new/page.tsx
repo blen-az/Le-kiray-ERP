@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Warehouse as WarehouseIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { apiFetch } from '@/lib/api';
 
 interface Project {
   id: string;
@@ -54,7 +55,7 @@ export default function CreateWarehousePage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/projects`);
+        const res = await apiFetch(`${apiUrl}/projects`);
         if (res.ok) {
           const data = await res.json();
           setProjects(data);
@@ -119,7 +120,7 @@ export default function CreateWarehousePage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/inventory/warehouses`, {
+      const res = await apiFetch(`${apiUrl}/inventory/warehouses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

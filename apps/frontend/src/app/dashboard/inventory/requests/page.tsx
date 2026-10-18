@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { InventoryRequestStatusBadge } from '@/components/inventory/InventoryRequestStatusBadge';
 import { InventoryPriorityBadge } from '@/components/inventory/InventoryPriorityBadge';
+import { apiFetch } from '@/lib/api';
 
 interface MaterialRequest {
   id: string;
@@ -88,7 +89,7 @@ export default function InventoryRequestsPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/inventory/requests`);
+        const res = await apiFetch(`${apiUrl}/inventory/requests`);
         if (res.ok) {
           const data = await res.json();
           setRequests(data);

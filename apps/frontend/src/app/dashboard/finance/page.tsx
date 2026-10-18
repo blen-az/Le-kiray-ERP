@@ -40,6 +40,7 @@ import {
   Cell,
   Legend,
 } from 'recharts';
+import { apiFetch } from '@/lib/api';
 
 const COLORS = ['#0284c7', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
 
@@ -132,7 +133,7 @@ export default function FinanceDashboardPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/finance/summary`);
+        const res = await apiFetch(`${apiUrl}/finance/summary`);
         if (res.ok) setSummary(await res.json());
       } catch (err) {
         console.error('Error loading finance summary:', err);

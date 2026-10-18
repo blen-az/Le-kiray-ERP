@@ -6,6 +6,7 @@ import { Calendar, Plus, Search, Filter, ArrowLeft, CheckCircle2, XCircle, Clock
 import { Card, CardContent } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { LeaveStatusBadge } from '@/components/hr/LeaveStatusBadge';
+import { apiFetch } from '@/lib/api';
 
 interface LeaveRequestItem {
   id: string;
@@ -75,7 +76,7 @@ export default function LeaveRequestsPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/hr/leave-requests`);
+        const res = await apiFetch(`${apiUrl}/hr/leave-requests`);
         if (res.ok) {
           const data = await res.json();
           setLeaves(data);

@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { EmployeeStatusBadge } from '@/components/hr/EmployeeStatusBadge';
 import { EmploymentTypeBadge } from '@/components/hr/EmploymentTypeBadge';
+import { apiFetch } from '@/lib/api';
 
 interface EmployeeItem {
   id: string;
@@ -64,7 +65,7 @@ export default function EmployeesListPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/hr/employees`);
+        const res = await apiFetch(`${apiUrl}/hr/employees`);
         if (res.ok) {
           const data = await res.json();
           setEmployees(data);

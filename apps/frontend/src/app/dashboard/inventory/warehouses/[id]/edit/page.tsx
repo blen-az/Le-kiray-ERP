@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 interface Project {
   id: string;
@@ -63,8 +64,8 @@ export default function EditWarehousePage() {
 
       try {
         const [whRes, projRes] = await Promise.all([
-          fetch(`${apiUrl}/inventory/warehouses/${id}`),
-          fetch(`${apiUrl}/projects`),
+          apiFetch(`${apiUrl}/inventory/warehouses/${id}`),
+          apiFetch(`${apiUrl}/projects`),
         ]);
 
         if (projRes.ok) {
@@ -125,7 +126,7 @@ export default function EditWarehousePage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/inventory/warehouses/${id}`, {
+      const res = await apiFetch(`${apiUrl}/inventory/warehouses/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

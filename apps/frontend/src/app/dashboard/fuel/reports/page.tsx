@@ -11,6 +11,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
+import { apiFetch } from '@/lib/api';
 
 const COLORS = ['#0284c7', '#10b981', '#f59e0b', '#6366f1', '#ec4899', '#14b8a6'];
 
@@ -47,10 +48,10 @@ export default function FuelReportsPage() {
 
       try {
         const [sumRes, projRes, machRes, opRes] = await Promise.all([
-          fetch(`${apiUrl}/fuel/reports/summary`),
-          fetch(`${apiUrl}/fuel/reports/by-project`),
-          fetch(`${apiUrl}/fuel/reports/by-machine`),
-          fetch(`${apiUrl}/fuel/reports/by-operator`),
+          apiFetch(`${apiUrl}/fuel/reports/summary`),
+          apiFetch(`${apiUrl}/fuel/reports/by-project`),
+          apiFetch(`${apiUrl}/fuel/reports/by-machine`),
+          apiFetch(`${apiUrl}/fuel/reports/by-operator`),
         ]);
         if (sumRes.ok) setSummary(await sumRes.json());
         if (projRes.ok) setByProject(await projRes.json());

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Building2,
+  Gavel,
   Truck,
   Warehouse,
   Droplet,
@@ -47,6 +48,12 @@ const ALL_MENU_ITEMS: NavItem[] = [
     href: '/dashboard/projects',
     icon: Building2,
     requiredPermission: 'projects:view',
+  },
+  {
+    name: 'Tenders & Bids',
+    href: '/dashboard/tenders',
+    icon: Gavel,
+    requiredPermission: 'tenders:view',
   },
   {
     name: 'Machinery',

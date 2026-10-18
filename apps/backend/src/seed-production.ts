@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { PERMISSION_REGISTRY } from './auth/permission-registry';
 
 const prisma = new PrismaClient();
 
@@ -7,7 +8,7 @@ async function main() {
   console.log('🌱 Starting Le’Kiray ERP Production Database Seeding...');
 
   const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@lekiray.com';
-  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD || 'ChangeThisPassword123!';
+  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD;
   const adminName = process.env.INITIAL_ADMIN_NAME || 'System Administrator';
   const companyName = process.env.INITIAL_COMPANY_NAME || 'Le’Kiray Enterprise';
 
@@ -27,67 +28,23 @@ async function main() {
     console.log(`✅ Created Production Company: ${company.name} (${company.id})`);
   }
 
-  // 2. Base System Permissions
-  const permissionsList = [
-    { action: 'projects:view', description: 'View projects' },
-    { action: 'projects:create', description: 'Create projects' },
-    { action: 'projects:edit', description: 'Edit projects' },
-    { action: 'projects:delete', description: 'Delete projects' },
-    { action: 'sites:view', description: 'View sites' },
-    { action: 'sites:create', description: 'Create sites' },
-    { action: 'sites:edit', description: 'Edit sites' },
-    { action: 'sites:delete', description: 'Delete sites' },
-    { action: 'machinery:view', description: 'View machinery' },
-    { action: 'machinery:create', description: 'Create machinery' },
-    { action: 'machinery:edit', description: 'Edit machinery' },
-    { action: 'machinery:delete', description: 'Delete machinery' },
-    { action: 'machinery:assign', description: 'Assign machinery to sites' },
-    { action: 'fuel:request', description: 'Request fuel' },
-    { action: 'fuel:approve', description: 'Approve fuel requests' },
-    { action: 'fuel:issue', description: 'Issue fuel' },
-    { action: 'fuel:view', description: 'View fuel logs' },
-    { action: 'inventory:view', description: 'View inventory' },
-    { action: 'inventory:manage', description: 'Manage inventory' },
-    { action: 'inventory:request', description: 'Request inventory items' },
-    { action: 'inventory:approve', description: 'Approve inventory requests' },
-    { action: 'inventory:issue', description: 'Issue inventory items' },
-    { action: 'hr:view', description: 'View HR records' },
-    { action: 'hr:manage', description: 'Manage HR records' },
-    { action: 'hr:attendance', description: 'Record attendance' },
-    { action: 'hr:leave_approve', description: 'Approve leave requests' },
-    { action: 'reports:create', description: 'Create daily reports' },
-    { action: 'reports:submit', description: 'Submit daily reports' },
-    { action: 'reports:approve', description: 'Approve daily reports' },
-    { action: 'reports:view', description: 'View daily reports' },
-    { action: 'maintenance:view', description: 'View maintenance' },
-    { action: 'maintenance:create', description: 'Create maintenance' },
-    { action: 'maintenance:manage', description: 'Manage maintenance' },
-    { action: 'finance:view', description: 'View finance' },
-    { action: 'finance:manage', description: 'Manage expenses and revenues' },
-    { action: 'finance:approve', description: 'Approve expenses' },
-    { action: 'dashboard:view', description: 'View dashboard' },
-    { action: 'settings:manage', description: 'Manage company settings and users' },
-  ];
-
+  // 2. Sync System Permissions (idempotent — safe to re-run on every deploy)
   const dbPermissions = [];
-  for (const perm of permissionsList) {
-    let p = await prisma.permission.findFirst({
-      where: { companyId: company.id, action: perm.action },
+  for (const perm of PERMISSION_REGISTRY) {
+    const p = await prisma.permission.upsert({
+      where: { companyId_action: { companyId: company.id, action: perm.action } },
+      update: { description: perm.description, deletedAt: null },
+      create: {
+        companyId: company.id,
+        action: perm.action,
+        description: perm.description,
+      },
     });
-    if (!p) {
-      p = await prisma.permission.create({
-        data: {
-          companyId: company.id,
-          action: perm.action,
-          description: perm.description,
-        },
-      });
-    }
     dbPermissions.push(p);
   }
-  console.log(`✅ Verified ${dbPermissions.length} production permissions.`);
+  console.log(`✅ Synced ${dbPermissions.length} production permissions.`);
 
-  // 3. Create CEO / Owner Role with all permissions
+  // 3. Ensure CEO / Owner Role holds every permission (including ones added by later releases)
   let ceoRole = await prisma.role.findFirst({
     where: { companyId: company.id, name: 'CEO / Owner' },
   });
@@ -100,17 +57,15 @@ async function main() {
         description: 'Full system administrator with unrestricted permission access',
       },
     });
-
-    for (const perm of dbPermissions) {
-      await prisma.rolePermission.create({
-        data: {
-          roleId: ceoRole.id,
-          permissionId: perm.id,
-        },
-      });
-    }
-    console.log(`✅ Created CEO / Owner role with all permissions.`);
+    console.log(`✅ Created CEO / Owner role.`);
   }
+
+  const granted = await prisma.rolePermission.createMany({
+    data: dbPermissions.map((perm) => ({ roleId: ceoRole!.id, permissionId: perm.id })),
+    skipDuplicates: true,
+  });
+  console.log(`✅ CEO / Owner role verified (${granted.count} new permissions granted).`);
+  console.log('ℹ️  Users must sign in again to pick up newly granted permissions.');
 
   // 4. Create Initial Administrator User
   const existingUser = await prisma.user.findUnique({
@@ -118,6 +73,9 @@ async function main() {
   });
 
   if (!existingUser) {
+    if (!adminPassword || adminPassword === 'ChangeThisPassword123!' || adminPassword.length < 12) {
+      throw new Error('INITIAL_ADMIN_PASSWORD must be set to a non-default value of at least 12 characters.');
+    }
     const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
     const hashedPassword = await bcrypt.hash(adminPassword, rounds);
 

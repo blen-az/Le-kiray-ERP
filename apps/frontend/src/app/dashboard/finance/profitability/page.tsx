@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { formatCurrency } from '@/lib/utils';
 import RequirePermission from '@/components/auth/RequirePermission';
+import { apiFetch } from '@/lib/api';
 
 interface ProjectProfitability {
   projectId: string;
@@ -73,7 +74,7 @@ export default function ProfitabilityPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/finance/profitability`);
+        const res = await apiFetch(`${apiUrl}/finance/profitability`);
         if (!res.ok) throw new Error('Failed to load profitability data');
         setProjects(await res.json());
       } catch (err: any) {

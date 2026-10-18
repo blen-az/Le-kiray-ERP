@@ -27,6 +27,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { formatCurrency } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 const COLORS = ['#0284c7', '#059669', '#d97706', '#7c3aed', '#dc2626', '#0891b2'];
 
@@ -92,8 +93,8 @@ export default function FinanceReportsPage() {
       setLoading(true);
       try {
         const [montRes, projRes] = await Promise.all([
-          fetch(`${apiUrl}/finance/summary?period=${period}`),
-          fetch(`${apiUrl}/finance/by-project`),
+          apiFetch(`${apiUrl}/finance/summary?period=${period}`),
+          apiFetch(`${apiUrl}/finance/by-project`),
         ]);
 
         if (montRes.ok) {

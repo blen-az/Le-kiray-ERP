@@ -64,12 +64,15 @@ jobs:
           JWT_SECRET: "ci_pipeline_jwt_secret_minimum_32_characters_key"
           JWT_REFRESH_SECRET: "ci_pipeline_refresh_secret_minimum_32_characters_key"
 
-      - name: Run Database Migrations for Tenant Testing
+      - name: Apply Committed Migrations & Check Schema Drift
         run: |
           cd apps/backend
-          npx prisma migrate dev --name init_ci
+          npx prisma migrate deploy
+          # Fails (exit 2) if schema.prisma has changes with no matching migration
+          npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
         env:
           DATABASE_URL: "postgresql://postgres:postgres_test_password@localhost:5432/lekiray_test"
+          DIRECT_URL: "postgresql://postgres:postgres_test_password@localhost:5432/lekiray_test"
 
       - name: Run Multi-Tenant Data Isolation Tests
         run: npm run test:tenant-real --workspace=apps/backend

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 interface Project {
   id: string;
@@ -66,8 +67,8 @@ export default function CreateExpensePage() {
 
       try {
         const [projRes, macRes] = await Promise.all([
-          fetch(`${apiUrl}/projects`),
-          fetch(`${apiUrl}/machinery`),
+          apiFetch(`${apiUrl}/projects`),
+          apiFetch(`${apiUrl}/machinery`),
         ]);
 
         if (projRes.ok) setProjects(await projRes.json());
@@ -122,7 +123,7 @@ export default function CreateExpensePage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/finance/expenses`, {
+      const res = await apiFetch(`${apiUrl}/finance/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

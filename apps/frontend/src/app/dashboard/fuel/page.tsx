@@ -39,6 +39,7 @@ import {
   Tooltip, 
   CartesianGrid 
 } from 'recharts';
+import { apiFetch } from '@/lib/api';
 
 interface Machine {
   id: string;
@@ -228,10 +229,10 @@ export default function FuelDashboardPage() {
 
     try {
       const [reqRes, logsRes, summaryRes, projRes] = await Promise.all([
-        fetch(`${apiUrl}/fuel/requests`),
-        fetch(`${apiUrl}/fuel/logs`),
-        fetch(`${apiUrl}/fuel/reports/summary`),
-        fetch(`${apiUrl}/fuel/reports/by-project`),
+        apiFetch(`${apiUrl}/fuel/requests`),
+        apiFetch(`${apiUrl}/fuel/logs`),
+        apiFetch(`${apiUrl}/fuel/reports/summary`),
+        apiFetch(`${apiUrl}/fuel/reports/by-project`),
       ]);
 
       if (reqRes.ok) setRequests(await reqRes.json());
@@ -290,7 +291,7 @@ export default function FuelDashboardPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/fuel/requests/${activeRequestId}/approve`, {
+      const res = await apiFetch(`${apiUrl}/fuel/requests/${activeRequestId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ litersApproved, costPerLiter, notes }),
@@ -315,7 +316,7 @@ export default function FuelDashboardPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/fuel/requests/${activeRequestId}/reject`, {
+      const res = await apiFetch(`${apiUrl}/fuel/requests/${activeRequestId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rejectionReason }),
@@ -337,7 +338,7 @@ export default function FuelDashboardPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/fuel/requests/${activeRequestId}/issue`, {
+      const res = await apiFetch(`${apiUrl}/fuel/requests/${activeRequestId}/issue`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

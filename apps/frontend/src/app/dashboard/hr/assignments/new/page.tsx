@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save, Briefcase } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 interface Employee {
   id: string;
@@ -71,8 +72,8 @@ function CreateAssignmentForm() {
 
       try {
         const [empRes, projRes] = await Promise.all([
-          fetch(`${apiUrl}/hr/employees`),
-          fetch(`${apiUrl}/projects`),
+          apiFetch(`${apiUrl}/hr/employees`),
+          apiFetch(`${apiUrl}/projects`),
         ]);
 
         if (empRes.ok) setEmployees(await empRes.json());
@@ -126,7 +127,7 @@ function CreateAssignmentForm() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/hr/assignments`, {
+      const res = await apiFetch(`${apiUrl}/hr/assignments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

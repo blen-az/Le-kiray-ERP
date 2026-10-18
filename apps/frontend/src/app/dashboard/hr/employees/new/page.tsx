@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { apiFetch } from '@/lib/api';
 
 export default function CreateEmployeePage() {
   const router = useRouter();
@@ -75,7 +76,7 @@ export default function CreateEmployeePage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/hr/employees`, {
+      const res = await apiFetch(`${apiUrl}/hr/employees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

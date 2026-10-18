@@ -29,6 +29,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface EmployeeOperator {
   id: string;
@@ -194,8 +195,8 @@ export default function MachineDetailsPage() {
 
     try {
       const [detailsRes, historyRes] = await Promise.all([
-        fetch(`${apiUrl}/machinery/${id}`),
-        fetch(`${apiUrl}/machinery/${id}/history`),
+        apiFetch(`${apiUrl}/machinery/${id}`),
+        apiFetch(`${apiUrl}/machinery/${id}/history`),
       ]);
 
       if (!detailsRes.ok) throw new Error('Could not retrieve machine details from NestJS backend');
@@ -250,7 +251,7 @@ export default function MachineDetailsPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/machinery/assignments/${activeAssignment.id}`, {
+      const res = await apiFetch(`${apiUrl}/machinery/assignments/${activeAssignment.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'Returned', actualReturnDate: new Date().toISOString() }),
@@ -282,7 +283,7 @@ export default function MachineDetailsPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/machinery/assignments/${activeAssignment.id}`, {
+      const res = await apiFetch(`${apiUrl}/machinery/assignments/${activeAssignment.id}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Could not cancel assignment');
@@ -317,7 +318,7 @@ export default function MachineDetailsPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/machinery/assignments/${activeAssignment.id}`, {
+      const res = await apiFetch(`${apiUrl}/machinery/assignments/${activeAssignment.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

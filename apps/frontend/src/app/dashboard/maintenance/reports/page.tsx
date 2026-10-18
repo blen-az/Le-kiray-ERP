@@ -18,6 +18,7 @@ import {
   Cell,
   Legend,
 } from 'recharts';
+import { apiFetch } from '@/lib/api';
 
 const COLORS = ['#0284c7', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
 
@@ -70,9 +71,9 @@ export default function MaintenanceReportsPage() {
 
       try {
         const [macRes, projRes, sumRes] = await Promise.all([
-          fetch(`${apiUrl}/maintenance/reports/by-machine`),
-          fetch(`${apiUrl}/maintenance/reports/by-project`),
-          fetch(`${apiUrl}/maintenance/reports/summary`),
+          apiFetch(`${apiUrl}/maintenance/reports/by-machine`),
+          apiFetch(`${apiUrl}/maintenance/reports/by-project`),
+          apiFetch(`${apiUrl}/maintenance/reports/summary`),
         ]);
 
         const costByMachine = macRes.ok ? await macRes.json() : fallbackReports.costByMachine;

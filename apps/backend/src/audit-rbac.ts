@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PERMISSION_REGISTRY } from './auth/permission-registry';
 
 const prisma = new PrismaClient();
 
@@ -28,26 +29,8 @@ async function auditRbac() {
 
   console.log(`📋 Found ${permissionsUsedInCode.size} unique permissions referenced in controller decorators.`);
 
-  // Load Seed Permissions
-  let seedPermissions: string[] = [];
-  try {
-    const seedContent = fs.readFileSync(path.join(__dirname, 'seed.ts'), 'utf-8');
-    const seedMatch = seedContent.match(/const permissions\s*=\s*(\[[^\]]+\])/s);
-    if (seedMatch) {
-      // Extract permissions array actions
-      const actionMatches = seedContent.matchAll(/action:\s*['"]([^'"]+)['"]/g);
-      for (const m of actionMatches) {
-        seedPermissions.push(m[1]);
-      }
-    }
-  } catch (err) {
-    console.warn('⚠️ Could not parse seed.ts directly, fetching from database...');
-  }
-
-  if (seedPermissions.length === 0) {
-    const dbPermissions = await prisma.permission.findMany({ select: { action: true } });
-    seedPermissions = dbPermissions.map((p) => p.action);
-  }
+  // Load the shared permission registry used by both seeders
+  const seedPermissions = PERMISSION_REGISTRY.map((p) => p.action);
 
   console.log(`✅ ${seedPermissions.length} total permissions defined in system registry.`);
 

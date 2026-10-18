@@ -151,9 +151,24 @@ docker compose -f docker-compose.prod.yml exec backend npx prisma migrate deploy
 > [!NOTE]
 > **Seed Separation Rule**: `seed.ts` contains fake demo data (ABC Construction PLC, fake machinery, fake logs) and is for staging/demo only. `seed-production.ts` seeds ONLY required permissions, base system roles, and the initial Super Admin.
 
+Set `INITIAL_ADMIN_EMAIL`, `INITIAL_ADMIN_PASSWORD` (12+ characters, not the example value), `INITIAL_ADMIN_NAME` and `INITIAL_COMPANY_NAME` in `.env` first. The compiled seeder ships inside the image (`src/` does not):
+
 ```bash
-docker compose -f docker-compose.prod.yml exec backend npx ts-node src/seed-production.ts
+docker compose -f docker-compose.prod.yml exec backend node dist/seed-production.js
 ```
+
+> [!IMPORTANT]
+> **Re-run on every release.** The production seeder is idempotent: it syncs every permission from `src/auth/permission-registry.ts` and grants any new ones to the `CEO / Owner` role. Without this step, new modules (e.g. Tenders) return 403 for existing admins. Users must sign out and back in afterwards to pick up new permissions.
+
+### 5.3 Upgrading an Existing Database Created with `db push`
+
+If a server was set up before migrations were committed (tables already exist), mark the baseline as applied once, then deploy normally:
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend npx prisma migrate resolve --applied 0_init
+```
+
+Note that `0_init` includes the `tenders` tables, so on such a server you must first create them with `npx prisma db push` (or apply the tender section of `prisma/migrations/0_init/migration.sql` manually) before resolving.
 
 ---
 

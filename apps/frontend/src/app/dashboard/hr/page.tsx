@@ -24,6 +24,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { EmployeeStatusBadge } from '@/components/hr/EmployeeStatusBadge';
 import { AttendanceStatusBadge } from '@/components/hr/AttendanceStatusBadge';
 import { LeaveStatusBadge } from '@/components/hr/LeaveStatusBadge';
+import { apiFetch } from '@/lib/api';
 
 interface HrKpis {
   totalEmployees: number;
@@ -131,9 +132,9 @@ export default function HrDashboardPage() {
 
       try {
         const [sumRes, attRes, leaveRes] = await Promise.all([
-          fetch(`${apiUrl}/hr/reports/summary`),
-          fetch(`${apiUrl}/hr/attendance`),
-          fetch(`${apiUrl}/hr/leave-requests?status=Pending`),
+          apiFetch(`${apiUrl}/hr/reports/summary`),
+          apiFetch(`${apiUrl}/hr/attendance`),
+          apiFetch(`${apiUrl}/hr/leave-requests?status=Pending`),
         ]);
 
         if (sumRes.ok) {

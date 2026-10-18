@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 export default function EditEmployeePage() {
   const params = useParams();
@@ -71,7 +72,7 @@ export default function EditEmployeePage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/hr/employees/${id}`);
+        const res = await apiFetch(`${apiUrl}/hr/employees/${id}`);
         if (!res.ok) throw new Error('Employee record not found');
         const emp = await res.json();
 
@@ -142,7 +143,7 @@ export default function EditEmployeePage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/hr/employees/${id}`, {
+      const res = await apiFetch(`${apiUrl}/hr/employees/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

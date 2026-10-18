@@ -28,6 +28,7 @@ import { formatCurrency } from '@/lib/utils';
 import { InventoryStatusBadge } from '@/components/inventory/InventoryStatusBadge';
 import { InventoryCategoryBadge } from '@/components/inventory/InventoryCategoryBadge';
 import { StockMovementTypeBadge } from '@/components/inventory/StockMovementTypeBadge';
+import { apiFetch } from '@/lib/api';
 
 interface InventoryItem {
   id: string;
@@ -150,8 +151,8 @@ export default function InventoryDashboardPage() {
 
       try {
         const [sumRes, itemsRes] = await Promise.all([
-          fetch(`${apiUrl}/inventory/reports/summary`),
-          fetch(`${apiUrl}/inventory/items`),
+          apiFetch(`${apiUrl}/inventory/reports/summary`),
+          apiFetch(`${apiUrl}/inventory/items`),
         ]);
 
         if (sumRes.ok) {

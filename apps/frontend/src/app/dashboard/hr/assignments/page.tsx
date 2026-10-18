@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Briefcase, Plus, Search, Filter, ArrowLeft, Building2, MapPin } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 interface AssignmentItem {
   id: string;
@@ -72,7 +73,7 @@ export default function EmployeeAssignmentsPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/hr/assignments`);
+        const res = await apiFetch(`${apiUrl}/hr/assignments`);
         if (res.ok) {
           const data = await res.json();
           setAssignments(data);

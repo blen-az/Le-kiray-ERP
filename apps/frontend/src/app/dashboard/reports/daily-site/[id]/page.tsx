@@ -27,6 +27,7 @@ import { DailyReportStatusBadge } from '@/components/reports/DailyReportStatusBa
 import { WeatherBadge } from '@/components/reports/WeatherBadge';
 import { PermissionGate } from '@/components/auth/RequirePermission';
 import { formatCurrency } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface ReportDetail {
   id: string;
@@ -129,7 +130,7 @@ export default function DailyReportDetailPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/reports/daily-site/${id}`);
+        const res = await apiFetch(`${apiUrl}/reports/daily-site/${id}`);
         if (!res.ok) throw new Error('Daily report record not found');
         const data = await res.json();
         setReport(data);
@@ -155,7 +156,7 @@ export default function DailyReportDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/reports/daily-site/${id}/submit`, { method: 'POST' });
+      const res = await apiFetch(`${apiUrl}/reports/daily-site/${id}/submit`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to submit report');
       setReport(await res.json());
     } catch (err: any) {
@@ -179,7 +180,7 @@ export default function DailyReportDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/reports/daily-site/${id}/approve`, {
+      const res = await apiFetch(`${apiUrl}/reports/daily-site/${id}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvalNotes }),
@@ -209,7 +210,7 @@ export default function DailyReportDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/reports/daily-site/${id}/reject`, {
+      const res = await apiFetch(`${apiUrl}/reports/daily-site/${id}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rejectionReason }),
@@ -236,7 +237,7 @@ export default function DailyReportDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/reports/daily-site/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`${apiUrl}/reports/daily-site/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete report');
       router.push('/dashboard/reports/daily-site');
     } catch (err: any) {
