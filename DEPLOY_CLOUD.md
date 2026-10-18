@@ -55,6 +55,18 @@ In Render, set `CORS_ORIGINS` and `FRONTEND_URL` to the exact Vercel production 
 > Vercel **preview** deployments have different URLs and are not in `CORS_ORIGINS`, so
 > sign-in/saving there will fail. Add a preview URL to `CORS_ORIGINS` (comma-separated) if you need one.
 
+## Onboarding contractor companies
+
+The account in `INITIAL_ADMIN_EMAIL` is the **Platform Admin** (Le’Kiray operator). It sees
+**Platform Admin** in the sidebar, where you onboard each company: company details plus an owner
+account. The owner receives a one-time temporary password, then adds their own team and roles
+from **Users & Access**. Every company's data is isolated from the others.
+
+To give more operators platform access, set `PLATFORM_ADMIN_EMAILS` on Render to a comma-separated
+list (it replaces the default). Removing an email revokes platform access on the next deploy.
+
+Suspending a company signs all its users out and blocks sign-in; its data is kept.
+
 ## Every release
 
 Merging to `main` redeploys both automatically. Migrations and permission sync run on backend

@@ -16,6 +16,8 @@ export interface AuthUser {
   permissions: string[];
   /** Set when an admin issued a temporary password; the app blocks everything until it is changed */
   mustChangePassword: boolean;
+  /** Le’Kiray operator — can onboard and suspend companies */
+  isPlatformAdmin: boolean;
 }
 
 interface AuthContextValue {
@@ -242,6 +244,7 @@ function mapUser(apiUser: any): AuthUser {
     roles: apiUser.roles ?? [],
     permissions: apiUser.permissions ?? [],
     mustChangePassword: apiUser.mustChangePassword === true,
+    isPlatformAdmin: apiUser.isPlatformAdmin === true,
   };
 }
 
@@ -271,5 +274,6 @@ function mapProfileToUser(token: string, profile: any): AuthUser {
     roles,
     permissions,
     mustChangePassword: profile.mustChangePassword === true,
+    isPlatformAdmin: profile.isPlatformAdmin === true,
   };
 }

@@ -16,6 +16,7 @@ import {
   DollarSign,
   Settings,
   UserCog,
+  Globe2,
   LogOut,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -35,6 +36,8 @@ interface NavItem {
   anyPermission?: string[];
   /** CEO only — no permission string required */
   ceoOnly?: boolean;
+  /** Le’Kiray platform operators only */
+  platformOnly?: boolean;
 }
 
 const ALL_MENU_ITEMS: NavItem[] = [
@@ -105,6 +108,12 @@ const ALL_MENU_ITEMS: NavItem[] = [
     requiredPermission: 'users:view',
   },
   {
+    name: 'Platform Admin',
+    href: '/dashboard/platform',
+    icon: Globe2,
+    platformOnly: true,
+  },
+  {
     name: 'Settings',
     href: '/dashboard/settings',
     icon: Settings,
@@ -120,6 +129,7 @@ export default function Sidebar({ className }: SidebarProps) {
 
   // Filter menu items based on user permissions
   const menuItems = ALL_MENU_ITEMS.filter((item) => {
+    if (item.platformOnly) return user?.isPlatformAdmin === true;
     // CEO / Owner sees everything
     if (isCEO()) return true;
 

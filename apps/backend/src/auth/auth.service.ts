@@ -8,7 +8,7 @@ import { createHash, randomUUID, timingSafeEqual } from 'crypto';
 import { SecurityLoggerService, SecurityEventType } from '../common/logger/security-logger.service';
 
 const USER_WITH_PERMISSIONS = {
-  company: { select: { name: true } },
+  company: { select: { name: true, status: true, deletedAt: true } },
   roles: {
     include: {
       role: {
@@ -124,7 +124,17 @@ export class AuthService {
       throw new UnauthorizedException(INVALID_CREDENTIALS);
     }
 
-    // Only reveal deactivation to someone who knows the password
+    // Only reveal suspension/deactivation to someone who knows the password
+    if (user.company.status !== 'Active' || user.company.deletedAt) {
+      this.securityLogger.logSecurityEvent(SecurityEventType.LOGIN_FAILURE, {
+        userId: user.id,
+        email: user.email,
+        companyId: user.companyId,
+        reason: `Company ${user.company.status}`,
+      });
+      throw new ForbiddenException('Your company account is suspended. Please contact Le’Kiray support.');
+    }
+
     if (!user.isActive) {
       this.securityLogger.logSecurityEvent(SecurityEventType.LOGIN_FAILURE, {
         userId: user.id,
@@ -169,6 +179,7 @@ export class AuthService {
     roles: string[],
     permissions: string[],
     mustChangePassword = false,
+    isPlatformAdmin = false,
   ) {
     const payload = {
       sub: userId,
@@ -177,6 +188,7 @@ export class AuthService {
       roles,
       permissions,
       mustChangePassword,
+      isPlatformAdmin,
     };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -209,6 +221,7 @@ export class AuthService {
     firstName: string;
     lastName: string;
     mustChangePassword: boolean;
+    isPlatformAdmin: boolean;
     company?: { name: string } | null;
     roles: string[];
     permissions: string[];
@@ -220,6 +233,7 @@ export class AuthService {
       user.roles,
       user.permissions,
       user.mustChangePassword,
+      user.isPlatformAdmin,
     );
 
     await this.updateRefreshToken(user.id, tokens.refreshToken);
@@ -237,6 +251,7 @@ export class AuthService {
         roles: user.roles,
         permissions: user.permissions,
         mustChangePassword: user.mustChangePassword,
+        isPlatformAdmin: user.isPlatformAdmin,
       },
     };
   }
@@ -268,7 +283,7 @@ export class AuthService {
         include: USER_WITH_PERMISSIONS,
       });
 
-      if (!user || user.deletedAt || !user.isActive || !user.refreshToken) {
+      if (!user || user.deletedAt || !user.isActive || !user.refreshToken || user.company.status !== 'Active' || user.company.deletedAt) {
         throw new UnauthorizedException('Access Denied: Invalid Session');
       }
 
