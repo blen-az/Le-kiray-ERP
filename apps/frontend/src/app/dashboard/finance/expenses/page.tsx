@@ -17,6 +17,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { ExpenseCategoryBadge } from '@/components/finance/ExpenseCategoryBadge';
 import { ExpenseStatusBadge } from '@/components/finance/ExpenseStatusBadge';
 import { formatCurrency } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface ExpenseItem {
   id: string;
@@ -104,7 +105,7 @@ export default function ExpensesDirectoryPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/finance/expenses`);
+        const res = await apiFetch(`${apiUrl}/finance/expenses`);
         if (res.ok) setExpenses(await res.json());
       } catch (err) {
         console.error('Error loading expenses:', err);

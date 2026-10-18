@@ -10,6 +10,7 @@ import { ArrowLeft, Truck, Calendar, Shield, DollarSign } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 const machineSchema = z.object({
   machineType: z.string().min(1, { message: 'Machine type is required' }),
@@ -100,7 +101,7 @@ export default function EditMachinePage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/machinery/${machineId}`);
+        const res = await apiFetch(`${apiUrl}/machinery/${machineId}`);
         if (!res.ok) throw new Error('Machine not found or API endpoint error');
         const m = await res.json();
 
@@ -154,7 +155,7 @@ export default function EditMachinePage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/machinery/${machineId}`, {
+      const res = await apiFetch(`${apiUrl}/machinery/${machineId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

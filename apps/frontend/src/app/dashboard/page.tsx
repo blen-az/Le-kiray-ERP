@@ -30,6 +30,7 @@ import {
   Cell,
   Legend,
 } from 'recharts';
+import { apiFetch } from '@/lib/api';
 
 // Types matching the Backend API payload
 interface CeoStats {
@@ -178,7 +179,7 @@ export default function CeoDashboard() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/dashboard/ceo`);
+        const res = await apiFetch(`${apiUrl}/dashboard/ceo`);
         if (!res.ok) throw new Error('Failed to load dashboard data from API');
         const json = await res.json();
         setData(json);

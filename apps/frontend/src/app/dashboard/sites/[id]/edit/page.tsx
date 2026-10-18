@@ -10,6 +10,7 @@ import { ArrowLeft, Building2, MapPin, Compass, User, Calendar, FileText } from 
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 // Schema Validation
 const siteSchema = z.object({
@@ -66,7 +67,7 @@ export default function EditSitePage() {
     async function loadManagers() {
       if (useMockData) return;
       try {
-        const res = await fetch(`${apiUrl}/projects/users/managers`);
+        const res = await apiFetch(`${apiUrl}/projects/users/managers`);
         if (res.ok) {
           const data = await res.json();
           setManagers(data);
@@ -98,7 +99,7 @@ export default function EditSitePage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/sites/${siteId}`);
+        const res = await apiFetch(`${apiUrl}/sites/${siteId}`);
         if (!res.ok) throw new Error('Site parameters not found or API connection failed');
         const s = await res.json();
 
@@ -146,7 +147,7 @@ export default function EditSitePage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/sites/${siteId}`, {
+      const res = await apiFetch(`${apiUrl}/sites/${siteId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

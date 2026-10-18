@@ -9,6 +9,7 @@ import * as z from 'zod';
 import { ArrowLeft, Building2, MapPin, Compass, User, Calendar, FileText } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { apiFetch } from '@/lib/api';
 
 // Schema Validation
 const siteSchema = z.object({
@@ -71,7 +72,7 @@ export default function NewSitePage() {
     async function loadManagers() {
       if (useMockData) return;
       try {
-        const res = await fetch(`${apiUrl}/projects/users/managers`);
+        const res = await apiFetch(`${apiUrl}/projects/users/managers`);
         if (res.ok) {
           const data = await res.json();
           setManagers(data);
@@ -107,7 +108,7 @@ export default function NewSitePage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/projects/${projectId}/sites`, {
+      const res = await apiFetch(`${apiUrl}/projects/${projectId}/sites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

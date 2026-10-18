@@ -9,6 +9,7 @@ import * as z from 'zod';
 import { ArrowLeft, Truck, Calendar, Shield, DollarSign, Info } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { apiFetch } from '@/lib/api';
 
 // Validation Schema
 const machineSchema = z.object({
@@ -112,7 +113,7 @@ export default function NewMachinePage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/machinery`, {
+      const res = await apiFetch(`${apiUrl}/machinery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

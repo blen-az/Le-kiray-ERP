@@ -27,6 +27,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface EmployeeOperator {
   id: string;
@@ -212,7 +213,7 @@ export default function MachineryPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/machinery`);
+        const res = await apiFetch(`${apiUrl}/machinery`);
         if (!res.ok) throw new Error('Failed to load fleet catalog from server');
         const data = await res.json();
         setMachines(data);
@@ -237,7 +238,7 @@ export default function MachineryPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/machinery/${id}`, {
+      const res = await apiFetch(`${apiUrl}/machinery/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete machine from server');

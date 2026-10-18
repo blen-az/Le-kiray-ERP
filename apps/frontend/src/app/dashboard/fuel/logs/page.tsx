@@ -10,6 +10,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 export default function FuelLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -54,7 +55,7 @@ export default function FuelLogsPage() {
         return;
       }
       try {
-        const res = await fetch(`${apiUrl}/fuel/logs`);
+        const res = await apiFetch(`${apiUrl}/fuel/logs`);
         if (!res.ok) throw new Error('Failed to load fuel logs');
         setLogs(await res.json());
       } catch (err: any) {

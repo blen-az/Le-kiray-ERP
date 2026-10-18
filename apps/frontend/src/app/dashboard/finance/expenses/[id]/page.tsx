@@ -23,6 +23,7 @@ import { ExpenseCategoryBadge } from '@/components/finance/ExpenseCategoryBadge'
 import { ExpenseStatusBadge } from '@/components/finance/ExpenseStatusBadge';
 import { PermissionGate } from '@/components/auth/RequirePermission';
 import { formatCurrency } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface ExpenseDetail {
   id: string;
@@ -84,7 +85,7 @@ export default function ExpenseDetailPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/finance/expenses/${id}`);
+        const res = await apiFetch(`${apiUrl}/finance/expenses/${id}`);
         if (!res.ok) throw new Error('Expense record not found');
         setExpense(await res.json());
       } catch (err: any) {
@@ -107,7 +108,7 @@ export default function ExpenseDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/finance/expenses/${id}/approve`, {
+      const res = await apiFetch(`${apiUrl}/finance/expenses/${id}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'Approved' }),
@@ -131,7 +132,7 @@ export default function ExpenseDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/finance/expenses/${id}/approve`, {
+      const res = await apiFetch(`${apiUrl}/finance/expenses/${id}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'Rejected' }),
@@ -156,7 +157,7 @@ export default function ExpenseDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/finance/expenses/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`${apiUrl}/finance/expenses/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete expense');
       router.push('/dashboard/finance/expenses');
     } catch (err: any) {

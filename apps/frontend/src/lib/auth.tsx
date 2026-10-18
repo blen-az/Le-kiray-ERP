@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { API_BASE, ACCESS_TOKEN_KEY, SESSION_EXPIRED_EVENT, TOKEN_REFRESHED_EVENT } from './api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,8 +38,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-const TOKEN_KEY = 'lk_access_token';
+const TOKEN_KEY = ACCESS_TOKEN_KEY;
 
 // ─── Provider ────────────────────────────────────────────────────────────────
 
@@ -56,6 +56,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.removeItem(TOKEN_KEY);
     }
   }, []);
+
+  // Keep state in sync with silent refreshes performed by apiFetch
+  useEffect(() => {
+    const onRefreshed = (e: Event) => setAccessToken((e as CustomEvent<string>).detail);
+    const onExpired = () => {
+      storeToken(null);
+      setUser(null);
+    };
+    window.addEventListener(TOKEN_REFRESHED_EVENT, onRefreshed);
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => {
+      window.removeEventListener(TOKEN_REFRESHED_EVENT, onRefreshed);
+      window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    };
+  }, [storeToken]);
 
   // Restore session on mount
   useEffect(() => {

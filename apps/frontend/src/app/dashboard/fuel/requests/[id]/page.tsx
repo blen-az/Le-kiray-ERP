@@ -14,6 +14,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { PermissionGate } from '@/components/auth/RequirePermission';
+import { apiFetch } from '@/lib/api';
 
 export default function FuelRequestDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -71,7 +72,7 @@ export default function FuelRequestDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/fuel/requests/${id}`);
+      const res = await apiFetch(`${apiUrl}/fuel/requests/${id}`);
       if (!res.ok) throw new Error('Could not load fuel request details');
       setRequest(await res.json());
     } catch (err: any) {
@@ -101,7 +102,7 @@ export default function FuelRequestDetailPage() {
       return;
     }
     try {
-      const res = await fetch(`${apiUrl}/fuel/requests/${id}/approve`, {
+      const res = await apiFetch(`${apiUrl}/fuel/requests/${id}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ litersApproved, costPerLiter, notes: modalNotes }),
@@ -130,7 +131,7 @@ export default function FuelRequestDetailPage() {
       return;
     }
     try {
-      const res = await fetch(`${apiUrl}/fuel/requests/${id}/reject`, {
+      const res = await apiFetch(`${apiUrl}/fuel/requests/${id}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rejectionReason }),
@@ -156,7 +157,7 @@ export default function FuelRequestDetailPage() {
       return;
     }
     try {
-      const res = await fetch(`${apiUrl}/fuel/requests/${id}/issue`, {
+      const res = await apiFetch(`${apiUrl}/fuel/requests/${id}/issue`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

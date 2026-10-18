@@ -13,6 +13,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { FinanceModule } from './finance/finance.module';
 import { HealthModule } from './health/health.module';
+import { TendersModule } from './tenders/tenders.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { HealthModule } from './health/health.module';
     MaintenanceModule,
     FinanceModule,
     HealthModule,
+    TendersModule,
   ],
   providers: [
     {

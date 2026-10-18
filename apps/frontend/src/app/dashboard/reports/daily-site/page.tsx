@@ -25,6 +25,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { DailyReportStatusBadge } from '@/components/reports/DailyReportStatusBadge';
 import { WeatherBadge } from '@/components/reports/WeatherBadge';
 import { formatCurrency } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface DailyReportItem {
   id: string;
@@ -146,9 +147,9 @@ export default function DailySiteReportsDashboardPage() {
 
       try {
         const [repRes, sumRes, todayRes] = await Promise.all([
-          fetch(`${apiUrl}/reports/daily-site`),
-          fetch(`${apiUrl}/reports/daily-site/summary`),
-          fetch(`${apiUrl}/reports/daily-site/today`),
+          apiFetch(`${apiUrl}/reports/daily-site`),
+          apiFetch(`${apiUrl}/reports/daily-site/summary`),
+          apiFetch(`${apiUrl}/reports/daily-site/today`),
         ]);
 
         if (repRes.ok) setReports(await repRes.json());

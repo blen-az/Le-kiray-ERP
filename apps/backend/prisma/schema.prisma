@@ -39,6 +39,8 @@ model Company {
   auditLogs            AuditLog[]
   expenses             Expense[]
   projectRevenues      ProjectRevenue[]
+  tenders              Tender[]
+  tenderChecklistItems TenderChecklistItem[]
 
   @@map("companies")
 }
@@ -91,6 +93,7 @@ model User {
   approvedExpenses           Expense[]            @relation("ExpenseApprovedBy")
   recordedRevenues           ProjectRevenue[]     @relation("RevenueRecordedBy")
   auditLogs                  AuditLog[]
+  ownedTenders               Tender[]             @relation("TenderBidManager")
 
   @@index([companyId, deletedAt])
   @@map("users")
@@ -206,6 +209,7 @@ model Project {
   maintenanceRecords MaintenanceRecord[]
   expenses           Expense[]
   projectRevenues    ProjectRevenue[]
+  sourceTender       Tender?             @relation("TenderConvertedProject")
 
   @@index([companyId, deletedAt])
   @@index([companyId, status])
@@ -937,4 +941,73 @@ model ProjectRevenue {
   deletedAt     DateTime?
 
   @@map("project_revenues")
+}
+
+model Tender {
+  id                    String    @id @default(uuid())
+  companyId             String
+  company               Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tenderNumber          String    // Procuring entity reference, e.g. "ERA/NCB/W-014/2026"
+  title                 String
+  procuringEntity       String    // Client issuing the tender, e.g. "Ethiopian Roads Administration"
+  category              String    // "Road Construction", "Building Construction", "Bridge & Structures", "Water & Irrigation", "Earthworks", "Machinery Rental", "Supply", "Consultancy", "Other"
+  procurementMethod     String    @default("Open National Bidding") // "Open National Bidding", "Open International Bidding", "Restricted Bidding", "Request for Quotation", "Direct Procurement"
+  source                String?   // "e-GP Portal", "Newspaper", "Direct Invitation", "Le’Kiray Marketplace", "Other"
+  requiredGrade         String?   // Contractor licence grade, e.g. "GC-1", "RC-3"
+  location              String?
+  regionOrCity          String?
+  description           String?   @db.Text
+  status                String    @default("Identified") // "Identified", "Preparing", "Submitted", "Under Evaluation", "Won", "Lost", "No Bid", "Cancelled"
+  winProbability        Int       @default(50) // 0 - 100, bid manager estimate
+  estimatedValue        Float     @default(0)  // Engineer estimate / client budget (ETB)
+  bidAmount             Float?                 // Our submitted bid price (ETB)
+  currency              String    @default("ETB")
+  documentFee           Float     @default(0)
+  bidSecurityAmount     Float     @default(0)
+  bidSecurityType       String?   // "Bank Guarantee", "CPO", "Insurance Bond", "Cash"
+  bidSecurityReturned   Boolean   @default(false)
+  publishedDate         DateTime?
+  siteVisitDate         DateTime?
+  clarificationDeadline DateTime?
+  submissionDeadline    DateTime
+  openingDate           DateTime?
+  submittedAt           DateTime?
+  decidedAt             DateTime?
+  awardedTo             String?   // Winning bidder when lost
+  awardedAmount         Float?
+  outcomeNotes          String?   @db.Text // Loss reason / no-bid reason / award notes
+  bidManagerId          String?
+  bidManager            User?     @relation("TenderBidManager", fields: [bidManagerId], references: [id], onDelete: SetNull)
+  convertedProjectId    String?   @unique
+  convertedProject      Project?  @relation("TenderConvertedProject", fields: [convertedProjectId], references: [id], onDelete: SetNull)
+  createdById           String?
+  updatedById           String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  // Relations
+  checklist             TenderChecklistItem[]
+
+  @@index([companyId, deletedAt])
+  @@index([companyId, status])
+  @@index([companyId, submissionDeadline])
+  @@map("tenders")
+}
+
+model TenderChecklistItem {
+  id          String    @id @default(uuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tenderId    String
+  tender      Tender    @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  label       String
+  isDone      Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([companyId, tenderId])
+  @@map("tender_checklist_items")
 }

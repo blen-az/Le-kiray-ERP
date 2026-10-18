@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { LoadingState } from '@/components/ui/loading-state';
 import { InventoryRequestStatusBadge } from '@/components/inventory/InventoryRequestStatusBadge';
 import { InventoryPriorityBadge } from '@/components/inventory/InventoryPriorityBadge';
+import { apiFetch } from '@/lib/api';
 
 interface MaterialRequestDetail {
   id: string;
@@ -109,8 +110,8 @@ export default function InventoryRequestDetailPage() {
 
       try {
         const [reqRes, whRes] = await Promise.all([
-          fetch(`${apiUrl}/inventory/requests/${reqId}`),
-          fetch(`${apiUrl}/inventory/warehouses`),
+          apiFetch(`${apiUrl}/inventory/requests/${reqId}`),
+          apiFetch(`${apiUrl}/inventory/warehouses`),
         ]);
 
         if (whRes.ok) setWarehouses(await whRes.json());
@@ -156,7 +157,7 @@ export default function InventoryRequestDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/inventory/requests/${reqId}/approve`, {
+      const res = await apiFetch(`${apiUrl}/inventory/requests/${reqId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -200,7 +201,7 @@ export default function InventoryRequestDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/inventory/requests/${reqId}/reject`, {
+      const res = await apiFetch(`${apiUrl}/inventory/requests/${reqId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rejectionReason }),
@@ -245,7 +246,7 @@ export default function InventoryRequestDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/inventory/requests/${reqId}/issue`, {
+      const res = await apiFetch(`${apiUrl}/inventory/requests/${reqId}/issue`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

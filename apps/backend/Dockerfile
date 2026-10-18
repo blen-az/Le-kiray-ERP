@@ -6,6 +6,7 @@ WORKDIR /app
 # Copy root dependencies and app package files
 COPY package*.json ./
 COPY apps/backend/package*.json ./apps/backend/
+COPY apps/frontend/package*.json ./apps/frontend/
 COPY apps/backend/prisma ./apps/backend/prisma
 
 # Install dependencies
@@ -25,7 +26,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Install openssl for Prisma
-RUN apk add --no-libc -U openssl
+RUN apk add --no-cache openssl
 
 # Copy dependencies and build outputs
 COPY package*.json ./

@@ -1,0 +1,38 @@
+# Render Blueprint for the NestJS backend (frontend is hosted on Vercel).
+# Deploy: Render dashboard → New → Blueprint → select this repo. See DEPLOY_CLOUD.md.
+services:
+  - type: web
+    name: lekiray-api
+    runtime: node
+    plan: starter # free plan sleeps after 15 min idle (~1 min cold start) — not suitable for production
+    region: frankfurt # closest Render region to Ethiopia
+    branch: main
+    buildCommand: npm ci --include=dev && npm run db:generate --workspace=apps/backend && npm run build --workspace=apps/backend
+    # Migrations + permission sync are idempotent and run on every deploy/restart
+    startCommand: cd apps/backend && npx prisma migrate deploy && node dist/seed-production.js && node dist/main.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+      - key: TRUST_PROXY
+        value: "2" # Vercel rewrite + Render load balancer
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: DATABASE_URL # Neon pooled connection string
+        sync: false
+      - key: DIRECT_URL # Neon direct (non-pooled) connection string, used for migrations
+        sync: false
+      - key: CORS_ORIGINS # https://<your-app>.vercel.app
+        sync: false
+      - key: FRONTEND_URL # https://<your-app>.vercel.app
+        sync: false
+      - key: INITIAL_ADMIN_EMAIL
+        sync: false
+      - key: INITIAL_ADMIN_PASSWORD # 12+ characters; only needed for the very first deploy
+        sync: false
+      - key: INITIAL_COMPANY_NAME
+        sync: false

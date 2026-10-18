@@ -10,6 +10,7 @@ import { ArrowLeft, Link2, Calendar, MapPin, User, FileText, Briefcase } from 'l
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 // Schema Validation
 const assignSchema = z.object({
@@ -123,8 +124,8 @@ export default function AssignMachinePage() {
       try {
         // Load projects and operators concurrently
         const [projRes, empRes] = await Promise.all([
-          fetch(`${apiUrl}/projects`),
-          fetch(`${apiUrl}/hr/employees`),
+          apiFetch(`${apiUrl}/projects`),
+          apiFetch(`${apiUrl}/hr/employees`),
         ]);
 
         if (projRes.ok) {
@@ -165,7 +166,7 @@ export default function AssignMachinePage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/machinery/${machineId}/assign`, {
+      const res = await apiFetch(`${apiUrl}/machinery/${machineId}/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

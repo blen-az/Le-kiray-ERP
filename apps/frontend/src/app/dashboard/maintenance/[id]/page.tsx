@@ -28,6 +28,7 @@ import { MaintenancePriorityBadge } from '@/components/maintenance/MaintenancePr
 import { MaintenanceTypeBadge } from '@/components/maintenance/MaintenanceTypeBadge';
 import { PermissionGate } from '@/components/auth/RequirePermission';
 import { formatCurrency } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface MaintenanceDetail {
   id: string;
@@ -130,7 +131,7 @@ export default function MaintenanceDetailPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/maintenance/${id}`);
+        const res = await apiFetch(`${apiUrl}/maintenance/${id}`);
         if (!res.ok) throw new Error('Maintenance record not found');
         const data = await res.json();
         setRecord(data);
@@ -162,7 +163,7 @@ export default function MaintenanceDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/maintenance/${id}/start`, {
+      const res = await apiFetch(`${apiUrl}/maintenance/${id}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -201,7 +202,7 @@ export default function MaintenanceDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/maintenance/${id}/complete`, {
+      const res = await apiFetch(`${apiUrl}/maintenance/${id}/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -231,7 +232,7 @@ export default function MaintenanceDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/maintenance/${id}/cancel`, {
+      const res = await apiFetch(`${apiUrl}/maintenance/${id}/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: cancelReason }),
@@ -258,7 +259,7 @@ export default function MaintenanceDetailPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/maintenance/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`${apiUrl}/maintenance/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete maintenance record');
       router.push('/dashboard/maintenance');
     } catch (err: any) {

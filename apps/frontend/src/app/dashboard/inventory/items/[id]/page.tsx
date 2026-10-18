@@ -11,6 +11,7 @@ import { InventoryStatusBadge } from '@/components/inventory/InventoryStatusBadg
 import { InventoryCategoryBadge } from '@/components/inventory/InventoryCategoryBadge';
 import { StockMovementTypeBadge } from '@/components/inventory/StockMovementTypeBadge';
 import { InventoryRequestStatusBadge } from '@/components/inventory/InventoryRequestStatusBadge';
+import { apiFetch } from '@/lib/api';
 
 interface ItemDetail {
   id: string;
@@ -123,7 +124,7 @@ export default function InventoryItemDetailPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/inventory/items/${itemId}`);
+        const res = await apiFetch(`${apiUrl}/inventory/items/${itemId}`);
         if (!res.ok) throw new Error('Inventory item not found');
         const data = await res.json();
         setItem(data);

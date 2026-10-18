@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save, Send, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 interface Project {
   id: string;
@@ -74,7 +75,7 @@ function CreateDailyReportForm() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/projects`);
+        const res = await apiFetch(`${apiUrl}/projects`);
         if (res.ok) setProjects(await res.json());
       } catch (err) {
         console.error('Error loading projects:', err);
@@ -144,7 +145,7 @@ function CreateDailyReportForm() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/reports/daily-site`, {
+      const res = await apiFetch(`${apiUrl}/reports/daily-site`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

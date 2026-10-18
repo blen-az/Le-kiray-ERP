@@ -18,6 +18,7 @@ import {
   Cell,
   Legend,
 } from 'recharts';
+import { apiFetch } from '@/lib/api';
 
 const COLORS = ['#0284c7', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
 
@@ -75,10 +76,10 @@ export default function HrReportsPage() {
 
       try {
         const [projRes, posRes, attRes, otRes] = await Promise.all([
-          fetch(`${apiUrl}/hr/reports/employees-by-project`),
-          fetch(`${apiUrl}/hr/reports/employees-by-position`),
-          fetch(`${apiUrl}/hr/reports/attendance-summary`),
-          fetch(`${apiUrl}/hr/reports/overtime-by-project`),
+          apiFetch(`${apiUrl}/hr/reports/employees-by-project`),
+          apiFetch(`${apiUrl}/hr/reports/employees-by-position`),
+          apiFetch(`${apiUrl}/hr/reports/attendance-summary`),
+          apiFetch(`${apiUrl}/hr/reports/overtime-by-project`),
         ]);
 
         const projData = projRes.ok ? await projRes.json() : fallbackReports.byProject;

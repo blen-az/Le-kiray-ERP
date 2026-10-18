@@ -8,6 +8,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { formatCurrency } from '@/lib/utils';
 import { InventoryStatusBadge } from '@/components/inventory/InventoryStatusBadge';
 import { InventoryCategoryBadge } from '@/components/inventory/InventoryCategoryBadge';
+import { apiFetch } from '@/lib/api';
 
 interface InventoryItem {
   id: string;
@@ -54,7 +55,7 @@ export default function InventoryItemsPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/inventory/items`);
+        const res = await apiFetch(`${apiUrl}/inventory/items`);
         if (res.ok) {
           const data = await res.json();
           setItems(data);
@@ -75,7 +76,7 @@ export default function InventoryItemsPage() {
     if (!confirm('Are you sure you want to soft delete this inventory item?')) return;
     try {
       if (!useMockData) {
-        await fetch(`${apiUrl}/inventory/items/${id}`, { method: 'DELETE' });
+        await apiFetch(`${apiUrl}/inventory/items/${id}`, { method: 'DELETE' });
       }
       setItems(items.filter((i) => i.id !== id));
     } catch (err: any) {

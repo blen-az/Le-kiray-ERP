@@ -18,6 +18,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { MaintenanceStatusBadge } from '@/components/maintenance/MaintenanceStatusBadge';
 import { MaintenancePriorityBadge } from '@/components/maintenance/MaintenancePriorityBadge';
 import { MaintenanceTypeBadge } from '@/components/maintenance/MaintenanceTypeBadge';
+import { apiFetch } from '@/lib/api';
 
 interface ScheduleSummary {
   totalScheduled: number;
@@ -92,7 +93,7 @@ export default function MaintenanceSchedulePage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/maintenance/schedule/upcoming`);
+        const res = await apiFetch(`${apiUrl}/maintenance/schedule/upcoming`);
         if (res.ok) setData(await res.json());
       } catch (err) {
         console.error('Error loading maintenance schedule:', err);

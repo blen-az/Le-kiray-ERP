@@ -9,6 +9,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { formatCurrency } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { InventoryStatusBadge } from '@/components/inventory/InventoryStatusBadge';
+import { apiFetch } from '@/lib/api';
 
 interface WarehouseDetail {
   id: string;
@@ -68,7 +69,7 @@ export default function WarehouseDetailPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/inventory/warehouses/${id}`);
+        const res = await apiFetch(`${apiUrl}/inventory/warehouses/${id}`);
         if (!res.ok) throw new Error('Warehouse record not found');
         const data = await res.json();
         setWarehouse(data);

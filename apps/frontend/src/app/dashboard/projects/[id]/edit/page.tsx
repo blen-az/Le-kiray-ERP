@@ -10,6 +10,7 @@ import { ArrowLeft, Briefcase, Calendar, MapPin, DollarSign, User, FileText } fr
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 // Schema Validation
 const projectSchema = z.object({
@@ -77,7 +78,7 @@ export default function EditProjectPage() {
     async function loadManagers() {
       if (useMockData) return;
       try {
-        const res = await fetch(`${apiUrl}/projects/users/managers`);
+        const res = await apiFetch(`${apiUrl}/projects/users/managers`);
         if (res.ok) {
           const data = await res.json();
           setManagers(data);
@@ -113,7 +114,7 @@ export default function EditProjectPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/projects/${projectId}`);
+        const res = await apiFetch(`${apiUrl}/projects/${projectId}`);
         if (!res.ok) throw new Error('Project not found or service connection failed');
         const p = await res.json();
         
@@ -161,7 +162,7 @@ export default function EditProjectPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/projects/${projectId}`, {
+      const res = await apiFetch(`${apiUrl}/projects/${projectId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

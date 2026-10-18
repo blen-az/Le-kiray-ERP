@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading-state';
 import { formatCurrency } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface ProjectFinanceDetail {
   projectId: string;
@@ -96,7 +97,7 @@ export default function ProjectFinanceDetailPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/finance/by-project?projectId=${id}`);
+        const res = await apiFetch(`${apiUrl}/finance/by-project?projectId=${id}`);
         if (!res.ok) throw new Error('Failed to load project finance data');
         setData(await res.json());
       } catch (err: any) {

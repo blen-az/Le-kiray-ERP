@@ -23,6 +23,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { PermissionGate } from '@/components/auth/RequirePermission';
+import { apiFetch } from '@/lib/api';
 
 interface Site {
   id: string;
@@ -134,7 +135,7 @@ export default function ProjectsPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/projects`);
+        const res = await apiFetch(`${apiUrl}/projects`);
         if (!res.ok) throw new Error('Failed to retrieve projects from backend service');
         const data = await res.json();
         setProjects(data);
@@ -159,7 +160,7 @@ export default function ProjectsPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/projects/${id}`, {
+      const res = await apiFetch(`${apiUrl}/projects/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete project from server');

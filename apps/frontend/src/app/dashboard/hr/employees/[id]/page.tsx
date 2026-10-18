@@ -28,6 +28,7 @@ import { EmploymentTypeBadge } from '@/components/hr/EmploymentTypeBadge';
 import { AttendanceStatusBadge } from '@/components/hr/AttendanceStatusBadge';
 import { LeaveStatusBadge } from '@/components/hr/LeaveStatusBadge';
 import { formatCurrency } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface EmployeeDetail {
   id: string;
@@ -183,7 +184,7 @@ export default function EmployeeDetailPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/hr/employees/${id}`);
+        const res = await apiFetch(`${apiUrl}/hr/employees/${id}`);
         if (!res.ok) throw new Error('Employee record not found');
         const data = await res.json();
         setEmployee(data);

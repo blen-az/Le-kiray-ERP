@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { apiFetch } from '@/lib/api';
 
 interface Employee {
   id: string;
@@ -42,7 +43,7 @@ export default function CreateLeaveRequestPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/hr/employees`);
+        const res = await apiFetch(`${apiUrl}/hr/employees`);
         if (res.ok) setEmployees(await res.json());
       } catch (err) {
         console.error('Error loading employees:', err);
@@ -91,7 +92,7 @@ export default function CreateLeaveRequestPage() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/hr/leave-requests`, {
+      const res = await apiFetch(`${apiUrl}/hr/leave-requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

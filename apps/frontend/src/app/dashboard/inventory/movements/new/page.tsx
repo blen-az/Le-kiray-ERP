@@ -7,6 +7,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { LoadingState } from '@/components/ui/loading-state';
+import { apiFetch } from '@/lib/api';
 
 interface InventoryItem {
   id: string;
@@ -98,10 +99,10 @@ function CreateStockMovementForm() {
 
       try {
         const [itemsRes, whRes, projRes, macRes] = await Promise.all([
-          fetch(`${apiUrl}/inventory/items`),
-          fetch(`${apiUrl}/inventory/warehouses`),
-          fetch(`${apiUrl}/projects`),
-          fetch(`${apiUrl}/machinery`),
+          apiFetch(`${apiUrl}/inventory/items`),
+          apiFetch(`${apiUrl}/inventory/warehouses`),
+          apiFetch(`${apiUrl}/projects`),
+          apiFetch(`${apiUrl}/machinery`),
         ]);
 
         if (itemsRes.ok) setItems(await itemsRes.json());
@@ -184,7 +185,7 @@ function CreateStockMovementForm() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/inventory/movements`, {
+      const res = await apiFetch(`${apiUrl}/inventory/movements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

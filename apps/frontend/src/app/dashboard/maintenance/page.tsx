@@ -25,6 +25,7 @@ import { MaintenanceStatusBadge } from '@/components/maintenance/MaintenanceStat
 import { MaintenancePriorityBadge } from '@/components/maintenance/MaintenancePriorityBadge';
 import { MaintenanceTypeBadge } from '@/components/maintenance/MaintenanceTypeBadge';
 import { formatCurrency } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface MaintenanceRecordItem {
   id: string;
@@ -133,8 +134,8 @@ export default function MaintenanceDashboardPage() {
 
       try {
         const [recRes, sumRes] = await Promise.all([
-          fetch(`${apiUrl}/maintenance`),
-          fetch(`${apiUrl}/maintenance/reports/summary`),
+          apiFetch(`${apiUrl}/maintenance`),
+          apiFetch(`${apiUrl}/maintenance/reports/summary`),
         ]);
 
         if (recRes.ok) setRecords(await recRes.json());

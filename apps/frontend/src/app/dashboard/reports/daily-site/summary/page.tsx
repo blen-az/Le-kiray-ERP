@@ -18,6 +18,7 @@ import {
   Cell,
   Legend,
 } from 'recharts';
+import { apiFetch } from '@/lib/api';
 
 const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#64748b', '#0284c7'];
 
@@ -68,7 +69,7 @@ export default function DailyReportsSummaryPage() {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/reports/daily-site/summary`);
+        const res = await apiFetch(`${apiUrl}/reports/daily-site/summary`);
         if (res.ok) {
           const sum = await res.json();
           // Map summary stats to charts
