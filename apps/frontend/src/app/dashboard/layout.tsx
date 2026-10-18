@@ -12,15 +12,17 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
   const currentDate = new Date();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/login');
+    } else if (user?.mustChangePassword) {
+      router.replace('/change-password');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, user, router]);
 
   // Show loading spinner while restoring session
   if (isLoading) {
@@ -35,7 +37,7 @@ export default function DashboardLayout({
   }
 
   // Don't flash the dashboard to unauthenticated users while redirecting
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated || user?.mustChangePassword) return null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">

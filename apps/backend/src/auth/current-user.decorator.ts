@@ -6,6 +6,7 @@ export class AuthenticatedUser {
   email!: string;
   roles!: string[];
   permissions!: string[];
+  mustChangePassword?: boolean;
 }
 
 export const CurrentUser = createParamDecorator(

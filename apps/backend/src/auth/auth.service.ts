@@ -1,9 +1,49 @@
-import { Injectable, UnauthorizedException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import * as bcrypt from 'bcrypt';
+import { createHash, randomUUID, timingSafeEqual } from 'crypto';
 import { SecurityLoggerService, SecurityEventType } from '../common/logger/security-logger.service';
+
+const USER_WITH_PERMISSIONS = {
+  company: { select: { name: true } },
+  roles: {
+    include: {
+      role: {
+        include: {
+          permissions: {
+            include: {
+              permission: true,
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+/** Same message for unknown email and wrong password, so login can't be used to discover accounts */
+const INVALID_CREDENTIALS = 'Invalid email or password';
+
+// Compared against when the email is unknown, so both paths take the same time
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('timing-equaliser-not-a-real-password', 10);
+
+/**
+ * Refresh tokens are JWTs whose first 72+ bytes are identical for a given user, and bcrypt
+ * only reads 72 bytes — so bcrypt would accept any older token. A SHA-256 digest covers
+ * the whole token; the token itself is already high-entropy, so no slow hash is needed.
+ */
+function hashRefreshToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+function refreshTokenMatches(token: string, storedHash: string): boolean {
+  const a = Buffer.from(hashRefreshToken(token), 'hex');
+  const b = Buffer.from(storedHash, 'hex');
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 @Injectable()
 export class AuthService {
@@ -13,32 +53,34 @@ export class AuthService {
     private securityLogger: SecurityLoggerService,
   ) {}
 
+  /** Flattens role names and the union of their permissions */
+  private flattenAccess(user: { roles: { role: { name: string; permissions: { permission: { action: string } }[] } }[] }) {
+    const roles = user.roles.map((ur) => ur.role.name);
+    const permissionSet = new Set<string>();
+    user.roles.forEach((ur) => {
+      ur.role.permissions.forEach((rp) => {
+        if (rp.permission.action) {
+          permissionSet.add(rp.permission.action);
+        }
+      });
+    });
+    return { roles, permissions: Array.from(permissionSet) };
+  }
+
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      include: {
-        roles: {
-          include: {
-            role: {
-              include: {
-                permissions: {
-                  include: {
-                    permission: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+    // Case-insensitive so "Name@Company.com" and "name@company.com" are the same login
+    const user = await this.prisma.user.findFirst({
+      where: { email: { equals: email.trim(), mode: 'insensitive' } },
+      include: USER_WITH_PERMISSIONS,
     });
 
     if (!user || user.deletedAt) {
+      await bcrypt.compare(pass, DUMMY_PASSWORD_HASH);
       this.securityLogger.logSecurityEvent(SecurityEventType.LOGIN_FAILURE, {
         email,
         reason: 'User not found or deleted',
       });
-      throw new NotFoundException('User not found');
+      throw new UnauthorizedException(INVALID_CREDENTIALS);
     }
 
     // Check account lockout status
@@ -79,7 +121,18 @@ export class AuthService {
         reason: `Invalid password. Attempt ${newFailedCount}/${MAX_LOGIN_ATTEMPTS}`,
       });
 
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(INVALID_CREDENTIALS);
+    }
+
+    // Only reveal deactivation to someone who knows the password
+    if (!user.isActive) {
+      this.securityLogger.logSecurityEvent(SecurityEventType.LOGIN_FAILURE, {
+        userId: user.id,
+        email: user.email,
+        companyId: user.companyId,
+        reason: 'Account deactivated',
+      });
+      throw new ForbiddenException('This account has been deactivated. Contact your administrator.');
     }
 
     // Successful authentication: Reset failed count & lock, update lastLoginAt
@@ -92,19 +145,7 @@ export class AuthService {
       },
     });
 
-    // Extract flat list of role names and actions/permissions
-    const roles = user.roles.map((ur) => ur.role.name);
-    
-    const permissionSet = new Set<string>();
-    user.roles.forEach((ur) => {
-      ur.role.permissions.forEach((rp) => {
-        if (rp.permission.action) {
-          permissionSet.add(rp.permission.action);
-        }
-      });
-    });
-
-    const permissions = Array.from(permissionSet);
+    const { roles, permissions } = this.flattenAccess(user);
 
     this.securityLogger.logSecurityEvent(SecurityEventType.LOGIN_SUCCESS, {
       userId: user.id,
@@ -113,7 +154,7 @@ export class AuthService {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...result } = user;
+    const { password, refreshToken, ...result } = user;
     return {
       ...result,
       roles,
@@ -121,13 +162,21 @@ export class AuthService {
     };
   }
 
-  async generateTokens(userId: string, companyId: string, email: string, roles: string[], permissions: string[]) {
+  async generateTokens(
+    userId: string,
+    companyId: string,
+    email: string,
+    roles: string[],
+    permissions: string[],
+    mustChangePassword = false,
+  ) {
     const payload = {
       sub: userId,
       companyId,
       email,
       roles,
       permissions,
+      mustChangePassword,
     };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -135,7 +184,9 @@ export class AuthService {
       secret: process.env.JWT_SECRET || 'super_secret_jwt_key_change_me_in_production',
     });
 
-    const refreshToken = this.jwtService.sign(payload, {
+    // jti makes every refresh token unique, even two issued within the same second,
+    // so rotation always invalidates the previous token
+    const refreshToken = this.jwtService.sign({ ...payload, jti: randomUUID() }, {
       expiresIn: (process.env.REFRESH_TOKEN_EXPIRES_IN || '7d') as any,
       secret: process.env.JWT_REFRESH_SECRET || 'super_secret_refresh_jwt_key_change_me',
     });
@@ -144,23 +195,31 @@ export class AuthService {
   }
 
   async updateRefreshToken(userId: string, refreshToken: string) {
-    const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
-    const hash = await bcrypt.hash(refreshToken, rounds);
     await this.prisma.user.update({
       where: { id: userId },
-      data: { refreshToken: hash },
+      data: { refreshToken: hashRefreshToken(refreshToken) },
     });
   }
 
-  async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
-    
+  /** Issues tokens and the client-facing user summary for an authenticated user */
+  private async issueSession(user: {
+    id: string;
+    companyId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    mustChangePassword: boolean;
+    company?: { name: string } | null;
+    roles: string[];
+    permissions: string[];
+  }) {
     const tokens = await this.generateTokens(
       user.id,
       user.companyId,
       user.email,
       user.roles,
       user.permissions,
+      user.mustChangePassword,
     );
 
     await this.updateRefreshToken(user.id, tokens.refreshToken);
@@ -174,10 +233,17 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         companyId: user.companyId,
+        company: user.company ? { name: user.company.name } : undefined,
         roles: user.roles,
         permissions: user.permissions,
+        mustChangePassword: user.mustChangePassword,
       },
     };
+  }
+
+  async login(loginDto: LoginDto) {
+    const user = await this.validateUser(loginDto.email, loginDto.password);
+    return this.issueSession(user);
   }
 
   async logout(userId: string) {
@@ -199,69 +265,69 @@ export class AuthService {
 
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        include: {
-          roles: {
-            include: {
-              role: {
-                include: {
-                  permissions: {
-                    include: {
-                      permission: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        include: USER_WITH_PERMISSIONS,
       });
 
-      if (!user || user.deletedAt || !user.refreshToken) {
+      if (!user || user.deletedAt || !user.isActive || !user.refreshToken) {
         throw new UnauthorizedException('Access Denied: Invalid Session');
       }
 
-      const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
-      if (!isMatch) {
+      if (!refreshTokenMatches(refreshToken, user.refreshToken)) {
         throw new UnauthorizedException('Access Denied: Invalid Session');
       }
 
       // Re-flatten roles & permissions to ensure they are fresh
-      const roles = user.roles.map((ur) => ur.role.name);
-      
-      const permissionSet = new Set<string>();
-      user.roles.forEach((ur) => {
-        ur.role.permissions.forEach((rp) => {
-          if (rp.permission.action) {
-            permissionSet.add(rp.permission.action);
-          }
-        });
-      });
-      const permissions = Array.from(permissionSet);
-
-      const tokens = await this.generateTokens(user.id, user.companyId, user.email, roles, permissions);
-      await this.updateRefreshToken(user.id, tokens.refreshToken);
+      const { roles, permissions } = this.flattenAccess(user);
+      const session = await this.issueSession({ ...user, roles, permissions });
 
       this.securityLogger.logSecurityEvent(SecurityEventType.REFRESH_TOKEN_ROTATED, {
         userId: user.id,
         companyId: user.companyId,
       });
 
-      return {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          companyId: user.companyId,
-          roles,
-          permissions,
-        },
-      };
+      return session;
     } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: USER_WITH_PERMISSIONS,
+    });
+    if (!user || user.deletedAt || !user.isActive) {
+      throw new UnauthorizedException('Access Denied: Invalid Session');
+    }
+
+    if (!(await bcrypt.compare(dto.currentPassword, user.password))) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('New password must be different from the current password');
+    }
+
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: await bcrypt.hash(dto.newPassword, rounds),
+        mustChangePassword: false,
+        passwordChangedAt: new Date(),
+        failedLoginCount: 0,
+        lockedUntil: null,
+      },
+    });
+
+    this.securityLogger.logSecurityEvent(SecurityEventType.PASSWORD_CHANGED, {
+      userId: user.id,
+      email: user.email,
+      companyId: user.companyId,
+    });
+
+    // New session replaces any other device's refresh token
+    const { roles, permissions } = this.flattenAccess(user);
+    return this.issueSession({ ...user, mustChangePassword: false, roles, permissions });
   }
 
   async getProfile(userId: string) {
@@ -282,7 +348,7 @@ export class AuthService {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...result } = user;
+    const { password, refreshToken, failedLoginCount, lockedUntil, refreshTokenVersion, ...result } = user;
     return result;
   }
 }
